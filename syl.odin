@@ -4,9 +4,20 @@ import "vendor:raylib"
 
 Element:: union {
 	^Box,
+	^Stack,
+	^Text,
+}
+
+Sizing :: enum {
+	Fit,
+	Fixed,
+	Expand,
+	Expand_Horizontal,
+	Expand_Vertical,
 }
 
 Base_Element :: struct {
+	id: string,
 	base_parent: ^Base_Element,
 	parent: Element,
 	base_style: ^Base_Style,
@@ -15,6 +26,7 @@ Base_Element :: struct {
 	global_position: [2]f32,
 	size: [2]f32,
 	overrides: bit_set[Style_Property],
+	theme: ^Style,
 }
 
 get_min_size :: proc(element: Element) -> [2]f32 {
@@ -23,8 +35,8 @@ get_min_size :: proc(element: Element) -> [2]f32 {
 }
 
 get_base :: proc(element: Element) -> ^Base_Element { 
-	switch e in element {
-	case ^Box: return &e.base,
+	#partial switch e in element {
+	case ^Box: return &e.base
 	}
 	return nil
 }
@@ -70,7 +82,6 @@ set_position :: proc(element: Element, pos: [2]f32) {
 	if base.base_parent != nil {
 		base.global_position += base.base_parent.global_position
 	}
-
 	for child in base.children {
 		child_base := get_base(child)
 		child_base.global_position = child_base.position + base.global_position
@@ -93,9 +104,9 @@ set_global_position :: proc(element: Element, pos: [2]f32) {
 	}
 }
 
-update_layout :: proc(el: Element) {
-	switch v in el {
-	case ^Box: update_box_layout(v)
+update :: proc(el: Element) {
+	#partial switch v in el {
+	case ^Box: update_box(v)
 	}
 }
 
@@ -103,10 +114,4 @@ val :: proc(val: $T) -> ^T {
 	return val
 }
 
-update :: proc(element: Element) {
-	switch e in element {
-	case ^Box: update_box_layout(e)
-	}
-
-	for child in get_children(element) do update(child)
-}
+transition_manager := Transition_Manager{}

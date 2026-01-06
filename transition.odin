@@ -9,49 +9,65 @@ Transition :: struct {
 }
 
 Animatable_Property :: enum {
-    Padding,
-    Width,
-    Height,
-    Opacity,
+    All,
+    Background_Color
 }
 
-Transition_Registry :: struct {
-    float_anims: map[Transition_Key]Float_Transition,
-    color_anims: map[Transition_Key]Color_Transition,
-}
-
-// 2. A unique key to look up an animation
-Transition_Key :: struct {
-    id:   u32,           // The Element's unique ID
-    prop: Animatable_Property,
-}
-
-Float_Transition :: struct {
-    start_val: f32,
-    end_val:   f32,
-    start_t:   time.Tick,
-    duration:  f32,
-    easing:    ease.Ease,
+Transition_Manager :: struct {
+    color_transitions: [dynamic]Color_Transition,
 }
 
 Color_Transition :: struct {
-    start_val: [4]f32,
-    end_val:   [4]f32,
+    target: ^[4]u8,
+    start: [4]u8,
+    end:   [4]u8,
     start_t:   time.Tick,
     duration:  f32,
     easing:    ease.Ease,
 }
 
-get_animated_float :: proc(reg: ^Transition_Registry, id: u32, prop: Animatable_Property, fallback: f32) -> f32 {
-    key := Transition_Key{id, prop}
-    
-    if anim, found := reg.float_anims[key]; found {
-        elapsed := f32(time.duration_seconds(time.tick_since(anim.start_t)))
-        progress := clamp(elapsed / anim.duration, f32(0.0), f32(1.0))
+update_transitions :: proc() {
+    manager := transition_manager
+    curr_tick := time.tick_now()
+
+    for i := len(manager.color_transitions) - 1; i >= 0; i -= 1 { 
+        t := &manager.color_transitions[i]
         
-        t := ease.ease(anim.easing, progress)
-        return anim.start_val + (anim.end_val - anim.start_val) * t
+        elapsed := f32(time.duration_seconds(time.tick_since(t.start_t)))
+        progress := clamp(elapsed / t.duration, 0.0, 1.0)
+        
+        t.target^ = interpolate_color(t.start, t.end, ease.ease(t.easing, progress))
+        
+        if progress >= 1.0 {
+            unordered_remove(&manager.color_transitions, i)
+        }
+    }
+}
+
+animate_color :: proc(target: ^[4]u8, end_val: [4]u8, duration: f32) {
+    // Clear existing transition for this pointer if it exists
+    for t, i in transition_manager.color_transitions {
+        if t.target == target {
+            unordered_remove(&transition_manager.color_transitions, i)
+            break
+        }
     }
 
-    return fallback
+    append(&transition_manager.color_transitions, Color_Transition{
+        target   = target,
+        start    = target^,
+        end      = end_val,
+        start_t  = time.tick_now(),
+        duration = duration,
+        easing   = .Linear,
+    })
+}
+
+interpolate_color :: proc(start: [4]u8, end: [4]u8, progress: f32) -> [4]u8 {
+    return {
+        u8(f32(start[0]) + f32(i32(end[0]) - i32(start[0])) * progress),
+        u8(f32(start[1]) + f32(i32(end[1]) - i32(start[1])) * progress),
+        u8(f32(start[2]) + f32(i32(end[2]) - i32(start[2])) * progress),
+        u8(f32(start[3]) + f32(i32(end[3]) - i32(start[3])) * progress),
+    }
 }
