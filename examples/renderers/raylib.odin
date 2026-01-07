@@ -74,20 +74,21 @@ main :: proc() {
 	)*/
 
 	app := syl.box(
-		size = {300, 80},
+		size = {250, 200},
 		layout_direction = .Left_To_Right,
 		sizing = .Fixed,
 		background_color = BLANK,
 		children = {
-			syl.box(size={60,60}, sizing = .Fixed),
-			syl.box(),
-			syl.box(),
+			syl.box(sizing = .Expand),
+			syl.box(
+				syl.text("This is an example of a text element inside a box. It should wrap properly and adjust the box size accordingly."),
+				sizing = .Expand
+			)
 		}
 	)
 
 	syl.apply_style(&style, app)
 	syl.calculate_layout(app)
-
     for !rl.WindowShouldClose() {
 		syl.update(app)
 		syl.update_transitions()
