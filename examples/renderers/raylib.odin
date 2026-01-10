@@ -2,17 +2,14 @@ package main
 
 import syl "../.."
 import renderer "../../renderer/raylib"
-import "core:fmt"
 import "core:math/ease"
 import rl "vendor:raylib"
 
-BLUE :: [4]u8{0, 0, 255, 255}
-BLACK :: [4]u8{0, 0, 0, 255}
-RED :: [4]u8{255, 0, 0, 255}
-GREEN :: [4]u8{0, 255, 0, 255}
-YELLOW :: [4]u8{255, 255, 0, 255}
+GREEN :: [4]u8{195,214,44, 255}
+DARK_GREEN :: [4]u8{110,210,40, 255}
+BLACK :: [4]u8{25,25,25, 255}
 BLANK :: [4]u8{0, 0, 0, 0}
-WHITE :: [4]u8{255, 255, 255, 255}
+RED :: [4]u8{255, 0, 0, 255}
 
 SCREEN_W :: 800
 SCREEN_H :: 500
@@ -20,122 +17,78 @@ SCREEN_H :: 500
 style_sheet := syl.StyleSheet {
 	box = {
 		default = {
-			background_color = BLANK,
-			padding_right = 10,
-			padding_left = 10,
-			padding_bottom = 10,
-			padding_top = 10,
-			gap = 10,
-			transitions = {background_color = {duration = 0.4, ease = .Cubic_In}},
+			border_color = GREEN,
+			transitions = {
+				background_color = {duration = 0.4, ease = .Cubic_In}
+			},
 		},
-		hover = {background_color = RED},
 	},
+	text = {
+		color = GREEN,
+	}
 }
 
-redish := [4]u8{69,36,44, 255}
-redisht := [4]u8{207,106,111, 255}
-grayish := [4]u8{44,44,44, 255}
-grayish2 := [4]u8{131,131,131, 255}
-gr := [4]u8{26,26,26, 255}
+item :: proc(title, active: string) -> ^syl.Element {
+	return syl.box(width_sizing=.Expand, children={
+	syl.box(syl.text(title, wrap=false), padding=14, border_color=BLANK),
+		syl.box(
+			syl.box(id="anim",width_sizing=.Expand, padding=10, background_color=GREEN, border_color=BLACK, children={
+				syl.text(active, color=BLACK),
+			}),
+			syl.box(
+				syl.text("SEMI-AUTO"),
+				syl.text("MAN-OVERRIDE"),
+				padding=14,
+				width_sizing=.Expand,
+			),
+			padding=1,
+			gap=4,
+			width_sizing=.Expand
+		)
+	})
+}
+
+make_app :: proc() -> ^syl.Element {
+	// You can pass a reference to a pointer to get a reference of an Element...
+	title: ^syl.Text 
+	return syl.box(size = {SCREEN_W, SCREEN_H}, padding=10, style_sheet = &style_sheet, children = {
+		syl.box(sizing=syl.Expand, padding=20, children = {
+			syl.box(sizing=syl.Expand, gap=0, padding=0, children = {
+				syl.box(width_sizing=.Expand, padding=14, layout_direction=.Left_To_Right, children= {
+					syl.box(sizing=syl.Expand, border_color=BLANK),
+					syl.text("REMOTE SENTRY WEAPON SYSTEM", wrap=false),
+					syl.box(sizing=syl.Expand, border_color=BLANK),
+				}),
+				syl.box(width_sizing=.Expand, padding=0, layout_direction=.Left_To_Right, children = {
+					item("System mode", "AUTO-REMOTE"),	
+					item("Weapon status", "SAFE"),	
+					item("Neural link", "STANDBY"),	
+					item("Hull integrity", "91.3%"),	
+				}),
+				syl.box(sizing=syl.Expand, padding=20, children = {
+					syl.text("Hull schematic floats center-screen, a wireframe skeleton breathing with the ship’s pulse. Damaged sections flicker amber; armor integrity ticks down in precise decimals. A thin red vector shows incoming fire, recalculated every millisecond. Orders stack as translucent cards. The top one glows. Authorize spinal discharge. The system asks nothing. It already knows. Across the glass, warnings whisper instead of shout. No alarms—just color shifts, micro-vibrations in the text. The ship doesn’t panic. It calculates.")
+				}),
+			})
+		})
+	})
+}
 
 main :: proc() {
-	rl.SetConfigFlags({.WINDOW_RESIZABLE} | {.WINDOW_TOPMOST})
+	//rl.SetConfigFlags({.WINDOW_RESIZABLE} | {.WINDOW_TOPMOST})
 	rl.InitWindow(SCREEN_W, SCREEN_H, "Syl in Raylib")
 	rl.SetTargetFPS(60)
 
-	syl.font = rl.LoadFontEx("Roboto-Regular.ttf", 18, nil, 0)
-
-	app := syl.box(size={SCREEN_W, SCREEN_H}, children = {
-		syl.center(
-			syl.box(padding=10, gap=10, background_color=gr, children = {
-				syl.box(syl.text("Schedule Meeting")),
-				syl.box(border_color=grayish, sizing=syl.Expand, children = {
-					syl.box(width_sizing=.Expand, padding=10, children = {
-						syl.box(syl.text("Andres"))
-					}),
-					syl.box(width_sizing=.Expand, children = {
-						syl.box(layout_direction = .Left_To_Right, width_sizing=.Expand, padding=10, gap=10, children = {
-							syl.text("Date", color=grayish2), syl.box(width_sizing=.Expand), syl.box(syl.text("May 20, 2025", color=grayish2)),
-						}),
-						syl.box(layout_direction = .Left_To_Right, width_sizing=.Expand, padding=10, gap=10, children = {
-							syl.text("Time", color=grayish2), syl.box(width_sizing=.Expand), syl.box(syl.text("09:30 AM", color=grayish2)),
-						}),
-						syl.box(layout_direction = .Left_To_Right, width_sizing=.Expand, padding=10, gap=10, children = {
-							syl.text("Duration", color=grayish2), syl.box(width_sizing=.Expand), syl.box(syl.text("30 Minutes", color=grayish2)),
-						}),
-					})
-				}),
-				syl.box(width_sizing=.Expand, layout_direction=.Left_To_Right, gap=10, children = {
-					syl.box(syl.text("Decline", color=redisht), padding=8, background_color=redish),
-					syl.box(syl.text("Reschedule"), sizing=syl.Expand, padding=8, background_color=grayish),
-				})
-			}),
-		)
-	})
-	
-
-	/*
-	app := syl.box(
-		style_sheet = &style_sheet,
-		layout_direction = .Left_To_Right,
-		size = {SCREEN_W, SCREEN_H},
-		background_color = BLANK,
-		children = {
-			syl.box(
-				layout_direction = .Top_To_Bottom,
-				gap = 0,
-				padding = 0,
-				width = 150,
-				sizing = {.Fixed, .Expand},
-				background_color = BLANK,
-				children = {
-					syl.box(syl.text("option 1"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 2"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 3"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 4"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 5"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 6"), width_sizing = .Expand, padding = 10),
-					syl.box(syl.text("option 7"), width_sizing = .Expand, padding = 10),
-				},
-			),
-			syl.box(
-				id = "main",
-				sizing = syl.Expand,
-				background_color = BLANK,
-				padding = 10,
-				children = {
-					syl.text(
-						"Odin is a general-purpose programming language with distinct typing built for high performance, modern systems and data-oriented programming. Odin is the C alternative for the Joy of Programming.",
-						color = BLACK,
-					),
-				},
-			),
-		},
-	)
-	app := syl.box(
-		size = {250, 60},
-		background_color = RED,
-		layout_direction = .Left_To_Right,
-		children = {
-			syl.box(sizing = syl.Expand, background_color = BLANK),
-			syl.box(sizing = syl.Expand, background_color = BLANK),
-			syl.box(syl.box(size = {200,50}), sizing = syl.Expand, background_color = GREEN),
-		}
-	)*/
-
+	app := make_app()	
 	syl.calculate_layout(app)
 
 	for !rl.WindowShouldClose() {
 		syl.calculate_layout(app)
-		syl.update(app)
+		syl.element_update(app)
 		syl.update_transitions()
 
 		rl.BeginDrawing()
-		rl.ClearBackground(cast(rl.Color)[4]u8{43,43,43,255})
+		rl.ClearBackground(cast(rl.Color)BLACK)
 		renderer.draw(app)
-		size := 40
-		//for row in 0..<50 do rl.DrawLine(0, i32(row*size), 800, i32(row*size), rl.GRAY)
-		//for col in 0..<50 do rl.DrawLine(i32(col*size), 0, i32(col*size), 400, rl.GRAY)
 		rl.EndDrawing()
 	}
 
