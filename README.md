@@ -6,8 +6,6 @@ Syl is an initiative to build a viable and competitive alternative for creating 
 
 With a retained-mode approach, Syl maintains a persistent representation of the interface, enabling efficient updates, clear separation between state and rendering, and simpler reasoning about complex layouts. This model makes it easier to optimize redraws, manage interactions, and scale interfaces as they grow in size and complexity.
 
-![demo](./demo.gif)
-
 > ⚠️WARNING! Syl is an experimental library. The final architecture is still undefined and may change significantly as the project evolves, so it is not suitable for real-world projects.
 > 
 
@@ -25,6 +23,33 @@ With a retained-mode approach, Syl maintains a persistent representation of the 
 ### Elements
 * Box: acts as a Flex-box item or container.
 * Text: wraps based on the parent `Box` width.
+
+![demo](./demo.gif)
+
+```odin
+app :: proc() -> ^syl.Element {
+	return syl.box(size = {SCREEN_W, SCREEN_H}, padding = 10, style_sheet = &style_sheet, children = {
+		syl.box(sizing=syl.Expand, padding = 20, children = {
+			syl.box(sizing = syl.Expand, gap = 0, padding = 0, children = {
+				syl.box(width_sizing =.Expand, padding = 14, layout_direction = .Left_To_Right, children = {
+					syl.box(sizing = syl.Expand, border_color = BLANK),
+					syl.text("REMOTE SENTRY WEAPON SYSTEM", wrap = false),
+					syl.box(sizing = syl.Expand, border_color = BLANK),
+				}),
+				syl.box(width_sizing = .Expand, padding = 0, layout_direction = .Left_To_Right, children = {
+					item("System mode", "AUTO-REMOTE"),	
+					item("Weapon status", "SAFE"),	
+					item("Neural link", "STANDBY"),	
+					item("Hull integrity", "91.3%"),	
+				}),
+				syl.box(sizing = syl.Expand, padding = 20, children = {
+					syl.text("Hull schematic floats center-screen, a wireframe...")
+				}),
+			})
+		})
+	})
+}
+```
 
 ### Contributing
 Syl is an open and exploratory project. Contributions, experiments, and discussions around its design and development are strongly encouraged, especially ideas that help shape the final architecture and long-term direction of the library.
