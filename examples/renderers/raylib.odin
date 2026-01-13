@@ -38,7 +38,7 @@ style_sheet := syl.Style_Sheet {
 
 new_app :: proc() -> ^syl.Element {
 	return syl.box(syl.center(syl.box(style_sheet = &style_sheet, background_color=BLANK, layout_direction=.Left_To_Right, gap=10, padding=10, children = {
-		syl.box(syl.text("option 1", wrap = false)),
+		syl.box(syl.text("option 1", wrap = false), id="b1"),
 		syl.box(syl.text("option 2", wrap = false)),
 		syl.box(syl.text("option 3", wrap = false)),
 		syl.box(syl.text("option 4", wrap = false)),

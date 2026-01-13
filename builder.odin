@@ -16,6 +16,7 @@ box :: proc(
 	sizing: 		  Sizing = {.Fit, .Fit},
     width_sizing:     Maybe(SizingKind) = nil,
     height_sizing:    Maybe(SizingKind) = nil,
+    id: Maybe(string) = nil,
 	on_state_changed: 	  proc(e: ^Element, to: Box_State) = nil,
 ) -> ^Element {
 	box := new(Box)
@@ -23,6 +24,10 @@ box :: proc(
 	box.style_sheet = style_sheet
 	box.sizing = sizing
     box.layout_direction = layout_direction
+
+    if val, ok := id.?; ok {
+        box.id = val
+    }
 
     if r, ok := ref.?; ok {
         r^ = box

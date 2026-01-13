@@ -143,14 +143,8 @@ box_apply_style_delta:: proc(box: ^Box, delta: Box_Style_Delta) {
 
 	if val, ok := delta.padding.?; ok && !(.Padding in box.overrides) {
 		t := transitions.padding
-		delta_t := delta_transitions.padding
 
-		if delta_t.duration > 0 {
-			animate_float(&box.padding[0], val[0], delta_t.duration, delta_t.ease)
-			animate_float(&box.padding[1], val[1], delta_t.duration, delta_t.ease)
-			animate_float(&box.padding[2], val[2], delta_t.duration, delta_t.ease)
-			animate_float(&box.padding[3], val[3], delta_t.duration, delta_t.ease)
-		} else if t.duration > 0 {
+		if t.duration > 0 {
 			animate_float(&box.padding[0], val[0], t.duration, t.ease)
 			animate_float(&box.padding[1], val[1], t.duration, t.ease)
 			animate_float(&box.padding[2], val[2], t.duration, t.ease)

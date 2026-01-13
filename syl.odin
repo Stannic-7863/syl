@@ -3,6 +3,7 @@ package syl
 Element_Type :: enum { Box, Text }
 
 Element :: struct {
+	id: string,
 	type: Element_Type,
 	parent: ^Element,
 	children: [dynamic]^Element,

@@ -5,6 +5,7 @@ package syl
 
 import rl "vendor:raylib"
 import "core:math"
+import "core:fmt"
 
 Box_Property :: enum {
 	Gap,
@@ -26,6 +27,7 @@ Box :: struct {
     layout_direction: Layout_Direction,
     on_state_changed: proc(e: ^Element, to: Box_State),
 	overrides: bit_set[Box_Property],
+    was_hovered: bool,
 }
 
 Layout_Direction :: enum {
@@ -172,19 +174,18 @@ box_change_state :: proc(box: ^Box) {
         if box.on_state_changed != nil {
             box.on_state_changed(box, .Hover)
         }
+        box.state = .Hover
         if box.style_sheet != nil {
             box_apply_style(box, box.style_sheet.box.hover)
         }
-        box.state = .Hover
-
     case .Hover:
         if box.on_state_changed != nil {
             box.on_state_changed(box, .Default)
         }
+        box.state = .Default
         if box.style_sheet != nil {
             box_apply_style(box, box.style_sheet.box.default)
         }
-        box.state = .Default
     }
 }
 
@@ -192,11 +193,12 @@ update_box :: proc(box: ^Box) {
     mouse_pos := rl.GetMousePosition()
     box_rect := rl.Rectangle{box.global_position.x, box.global_position.y, box.size.x, box.size.y}
     collide := rl.CheckCollisionPointRec(mouse_pos, box_rect)
-    if box.state == .Default && collide {
+    if !box.was_hovered && box.state == .Default && collide {
         box_change_state(box)
-    }
-    if box.state == .Hover && !collide {
+        box.was_hovered = true
+    } else if box.state == .Hover && !collide {
         box_change_state(box)
+        box.was_hovered = false
     }
 
     for child in box.children do element_update(child)

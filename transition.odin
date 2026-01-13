@@ -38,11 +38,10 @@ Float_Transition :: struct {
 }
 
 update_transitions :: proc() {
-    manager := transition_manager
     curr_tick := time.tick_now()
 
-    for i := len(manager.color_transitions) - 1; i >= 0; i -= 1 { 
-        t := &manager.color_transitions[i]
+    for i := len(transition_manager.color_transitions) - 1; i >= 0; i -= 1 { 
+        t := &transition_manager.color_transitions[i]
         
         elapsed := f32(time.duration_seconds(time.tick_since(t.start_t)))
         progress := clamp(elapsed / t.duration, 0.0, 1.0)
@@ -50,12 +49,12 @@ update_transitions :: proc() {
         t.target^ = interpolate_color(t.start, t.end, ease.ease(t.easing, progress))
         
         if progress >= 1.0 {
-            unordered_remove(&manager.color_transitions, i)
+            unordered_remove(&transition_manager.color_transitions, i)
         }
     }
 
-    for i := len(manager.transitions) - 1; i >= 0; i -= 1 { 
-        t := &manager.transitions[i]
+    for i := len(transition_manager.transitions) - 1; i >= 0; i -= 1 { 
+        t := &transition_manager.transitions[i]
         
         elapsed := f32(time.duration_seconds(time.tick_since(t.start_t)))
         progress := clamp(elapsed / t.duration, 0.0, 1.0)
@@ -63,7 +62,7 @@ update_transitions :: proc() {
         t.target^ = interpolate_float(t.start, t.end, ease.ease(t.easing, progress))
         
         if progress >= 1.0 {
-            unordered_remove(&manager.transitions, i)
+            unordered_remove(&transition_manager.transitions, i)
         }
     }
 }
@@ -77,7 +76,7 @@ animate_float:: proc(target: ^f32, end_val: f32, duration: f32, easing: ease.Eas
         }
     }
 
-    if target^ == end_val do return
+    //if target^ == end_val do return
 
     append(&transition_manager.transitions, Float_Transition{
         target   = target,
@@ -97,7 +96,7 @@ animate_color :: proc(target: ^[4]u8, end_val: [4]u8, duration: f32, easing: eas
             break
         }
     }
-    if target^ == end_val do return
+    //if target^ == end_val do return
 
     append(&transition_manager.color_transitions, Color_Transition{
         target   = target,
