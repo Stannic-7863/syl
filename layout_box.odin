@@ -480,7 +480,6 @@ layout_box_apply_style_delta:: proc(box: ^Layout_Box, delta: Box_Style_Delta, de
 	}
 
 	if val, ok := delta.padding.?; ok && !(.Padding in box.overrides) {
-        box.padding = val
 		using transitions.padding
         animate_float(&box.padding[0], val[0], duration, ease)
         animate_float(&box.padding[1], val[1], duration, ease)
