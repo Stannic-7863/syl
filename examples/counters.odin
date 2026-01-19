@@ -1,12 +1,10 @@
 package main
 
-import "core:strconv"
-import "core:fmt"
 import syl "../"
 import renderer "../renderer/raylib"
 import "core:math/ease"
 import rl "vendor:raylib"
-import "core:strings"
+import "core:fmt"
 
 GREEN :: [4]u8{175,194,30, 255}
 BLUE :: [4]u8{0, 0, 255, 255}
@@ -24,7 +22,7 @@ SCREEN_H :: 500
 style_sheet := syl.Style_Sheet {
 	box = {
 		default = {
-			padding = 10
+			padding = 0
 		},
 	},
 	button = {
@@ -54,6 +52,28 @@ style_sheet := syl.Style_Sheet {
 	}
 }
 
+primary_button := syl.Button_Styles_Override {
+	default = {
+		text_color = WHITE,
+		font_size = 18,
+		background_color = BLUE,
+		//padding = [4]f32{10,15,10,15},
+		border_radius = 8,
+		transitions = syl.Box_Transitions {
+			background_color = {0.05, .Linear},
+		},
+	},
+	hover = {
+		background_color = RED,
+	},
+	press = {
+		background_color = GREEN,
+		transitions = syl.Box_Transitions{
+			background_color = {0, .Linear}
+		}
+	}
+}
+
 MessageKind :: enum {
 	Increment,
 	Decrement
@@ -70,24 +90,27 @@ Counter :: struct {
 	counter_label: ^syl.Text,
 }
 
-counter_update:: proc(counter: ^Counter, message: Message) {
+counter_update:: proc(using counter: ^Counter, message: Message) {
 	switch message.kind {
-		case .Increment: counter.count += message.amount
-		case .Decrement: counter.count -= message.amount
+		case .Increment: count += message.amount
+		case .Decrement: count -= message.amount
 	}
-	syl.text_set_content(counter.counter_label, "%d", counter.count)
+
+	syl.text_set_content(counter_label, "%d", count)
 }
 
-counter :: proc() -> ^syl.Box {
+counter_destroy :: proc(counter: ^Counter) {
+	free(counter)
+}
+
+counter :: proc() -> ^Counter {
 	c := new(Counter)
-	return syl.box(
-		padding=0,
-		handler = syl.make_handler(c, syl.Box, Message, counter_update),
+	syl.box(
+		handler = syl.make_handler(c, syl.Box, Message, counter_update, counter_destroy),
 		layout_direction = .Left_To_Right,
 		gap = 10,
-		width = 130,
 		children = {
-			syl.button(text_content = "-", on_click = Message{.Decrement, 1}),
+			syl.button(text_content = "-", on_click = Message{.Decrement, 1}, style=&primary_button),
 			syl.box(
 				syl.text("0", ref = &c.counter_label),
 				sizing=syl.Expand,
@@ -95,10 +118,10 @@ counter :: proc() -> ^syl.Box {
 			syl.button(text_content = "+", on_click = Message{.Increment, 1}),
 		}
 	)
+	return c
 }
 
 main :: proc() {
-	//rl.SetConfigFlags({.WINDOW_RESIZABLE} | {.WINDOW_TOPMOST})
 	rl.SetConfigFlags({.MSAA_4X_HINT})
 	rl.InitWindow(SCREEN_W, SCREEN_H, "Syl in Raylib")
 	rl.SetTargetFPS(60)
@@ -110,10 +133,8 @@ main :: proc() {
 		counter(), 
 		counter(), 
 		counter(), 
-		counter(),
-		counter(),
-		counter(),
 		style_sheet = &style_sheet,
+		padding = 40,
 		gap=4,
 	)
 
@@ -124,10 +145,9 @@ main :: proc() {
 
 		rl.BeginDrawing()
 		rl.ClearBackground(cast(rl.Color)BLACK)
-		renderer.draw(app)
+		renderer.render(app)
 		rl.EndDrawing()
 	}
 
 	rl.CloseWindow()
 }
-
