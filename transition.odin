@@ -48,7 +48,7 @@ update_transitions :: proc() {
         
         t.target^ = interpolate_color(t.start, t.end, ease.ease(t.easing, progress))
         
-        if progress >= 1.0 {
+        if progress >= 1.0 || t.target^ == t.end {
             unordered_remove(&transition_manager.color_transitions, i)
         }
     }
@@ -61,7 +61,7 @@ update_transitions :: proc() {
         
         t.target^ = interpolate_float(t.start, t.end, ease.ease(t.easing, progress))
         
-        if progress >= 1.0 {
+        if progress >= 1.0 || t.target^ == t.end {
             unordered_remove(&transition_manager.transitions, i)
         }
     }
@@ -77,6 +77,12 @@ animate_float:: proc(target: ^f32, end_val: f32, duration: f32, easing: ease.Eas
     }
 
     if target^ == end_val do return
+
+    // If duration is zero behave like immediate set (avoid division by zero in updater)
+    if duration == 0 {
+        target^ = end_val
+        return
+    }
 
     append(&transition_manager.transitions, Float_Transition{
         target   = target,

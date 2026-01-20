@@ -2,6 +2,7 @@ package syl
 
 import rl "vendor:raylib"
 import "core:fmt"
+import "core:mem"
 
 Button_State :: enum {
     Default,
@@ -16,6 +17,7 @@ Button :: struct {
 	button_state: Button_State,
     on_button_state_changed: proc(e: ^Button, to: Button_State),
     on_click: Maybe(any),
+    on_mouse_over: Maybe(any),
 }
 
 button_destroy:: proc(button: ^Button) {
@@ -27,6 +29,9 @@ button_deinit :: proc(button: ^Button) {
     if button == nil do return
     layout_box_deinit(button)
     if val, ok := button.on_click.? ; ok {
+        free(val.data)
+    }
+    if val, ok := button.on_mouse_over.? ; ok {
         free(val.data)
     }
 }
@@ -90,6 +95,7 @@ update_button :: proc(button: ^Button) {
         }
     } else if collide {
         if button.button_state != .Hover {
+            button_dispatch(button, button.on_mouse_over)
             button_change_state(button, .Hover)
         }
     } else {

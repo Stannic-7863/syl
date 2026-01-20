@@ -206,6 +206,7 @@ button:: proc(
     height_sizing:    Maybe(SizingKind) = nil,
     style:    		 ^Button_Styles_Override = nil,
 	on_click: 		  Maybe(any) = nil,
+	on_mouse_over: 	  Maybe(any) = nil,
 ) -> ^Button {
 	button: ^Button
 	is_owner := false
@@ -237,6 +238,10 @@ button:: proc(
 
 	if val, ok := on_click.?; ok {
 		button.on_click = copy_any_to_heap(val)
+	}
+	
+	if val, ok := on_mouse_over.?; ok {
+		button.on_mouse_over = copy_any_to_heap(val)
 	}
 
 	if val, ok := text_content.?; ok {

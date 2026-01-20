@@ -1,6 +1,5 @@
 package syl
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 Box_Styles_Override :: struct {

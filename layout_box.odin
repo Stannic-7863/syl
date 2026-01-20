@@ -104,9 +104,17 @@ calculate_padding :: proc(box: ^Layout_Box, axis: int) -> f32 {
     //  0    1        2     3
     // top, right, bottom, left
     if axis == 0 { 
-        return box.padding[1] + box.padding[3] // right, left: 1, 3
+        p1 := box.padding[1]
+        p3 := box.padding[3]
+        if math.is_nan(p1) || math.is_inf(p1) do p1 = 0
+        if math.is_nan(p3) || math.is_inf(p3) do p3 = 0
+        return p1 + p3 // right, left: 1, 3
     } else { 
-        return box.padding[0] + box.padding[2] // top, bottom: 0, 2
+        p0 := box.padding[0]
+        p2 := box.padding[2]
+        if math.is_nan(p0) || math.is_inf(p0) do p0 = 0
+        if math.is_nan(p2) || math.is_inf(p2) do p2 = 0
+        return p0 + p2 // top, bottom: 0, 2
     }
 }
 
@@ -216,8 +224,14 @@ progressive_expand :: proc(box: ^Layout_Box, axis: int, remaining: f32) {
     
     remaining := remaining
     prev_remaining := f32(0)
-    
-    for remaining > 1e-6 {
+    iter := 0
+    max_iters := 1000
+
+    for remaining > 1e-6 && iter < max_iters {
+        if math.is_nan(remaining) || math.is_inf(remaining) {
+            break
+        }
+        iter += 1
         smallest, second_smallest := find_smallest_and_second(expandable, axis)
         
         // If all elements are equal, distribute remaining evenly
@@ -258,6 +272,15 @@ progressive_expand :: proc(box: ^Layout_Box, axis: int, remaining: f32) {
 
         // prevent infinite loop
         if count == 0 do break 
+    }
+    if iter >= max_iters {
+        // fallback: distribute remaining evenly to avoid lock
+        if len(expandable) > 0 {
+            per_child := remaining / f32(len(expandable))
+            for child in expandable {
+                child.size[axis] += per_child
+            }
+        }
     }
 }
 
@@ -311,7 +334,13 @@ progressive_collapse:: proc(box: ^Layout_Box, axis: int, remaining: f32) {
     }
     
     remaining := remaining
-    for remaining < 0 && len(collapsible) > 0 {
+    iter := 0
+    max_iters := 1000
+    for remaining < 0 && len(collapsible) > 0 && iter < max_iters {
+        /*if math.is_nan(remaining) || math.is_inf(remaining) {
+            break
+        }*/
+        iter += 1
         largest, second_largest := find_largest_and_second(collapsible, axis)
         
         // Calculate how much to remove to bring largest down to second largest
@@ -336,6 +365,12 @@ progressive_collapse:: proc(box: ^Layout_Box, axis: int, remaining: f32) {
                 
                 remaining += (child.size[axis] - prev)
             }
+        }
+    }
+    if iter >= max_iters {
+        // If we've hit the iteration cap, ensure sizes are within min bounds
+        for child in box.children {
+            child.size[axis] = max(child.size[axis], child.min_size[axis])
         }
     }
 }

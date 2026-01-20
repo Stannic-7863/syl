@@ -1,7 +1,6 @@
 package syl
 
 import "base:intrinsics"
-import "core:fmt"
 
 transition_manager := Transition_Manager{}
 
@@ -12,7 +11,8 @@ MessageHandler :: struct($T: typeid) {
 	element: rawptr,
 }
 
-make_handler :: proc(element: ^$E, $B:typeid, $M: typeid, update_proc: proc(^E, M), destroy_proc: proc(^E)) -> MessageHandler(B) where (intrinsics.type_field_type(E, "base") == B) {
+// ^custom_element, base_type, message_type, update, destroy
+make_handler :: proc(element: ^$E, $B:typeid, $M: typeid, update_proc: proc(^E, ^M), destroy_proc: proc(^E)) -> MessageHandler(B) where (intrinsics.type_field_type(E, "base") == B) {
 	return {
 		element = element,
 		base = &element.base,
@@ -43,8 +43,6 @@ Element :: struct {
 	handler: Maybe(Handler),
 }
 
-
-
 SizingKind :: enum {
 	Fit,
 	Fixed,
@@ -54,8 +52,26 @@ SizingKind :: enum {
 Sizing :: [2]SizingKind
 
 element_add_child:: proc(element: ^Element, child: ^Element) { 
+	if child.parent == element do return
 	append_elem(&element.children, child)
+	element_apply_style_recursive(child, element.style_sheet)
 	child.parent = element
+	element_set_owner(child, element.owner)
+}
+
+element_remove_child:: proc(element: ^Element, child: ^Element) { 
+	if child.parent == element {
+		child.style_sheet = nil
+		child.parent = nil
+		child.owner = nil
+		remove_item(&element.children, child)
+	}
+}
+
+element_remove_children:: proc(element: ^Element) { 
+	for child in element.children {
+		element_remove_child(element, child)
+	}
 }
 
 element_set_position :: proc(element: ^Element, pos: [2]f32) { 

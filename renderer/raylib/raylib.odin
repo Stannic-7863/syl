@@ -3,6 +3,7 @@ package raylib_renderer
 import rl "vendor:raylib"
 import syl "../.."
 import "core:strings"
+import "core:math"
 
 
 render :: proc(element: ^syl.Element) {
@@ -17,7 +18,8 @@ render :: proc(element: ^syl.Element) {
 box_draw :: proc(box: ^syl.Box) {
 	pos := box.global_position
 	size := box.size
-	border_width: f32 = 2
+	border_width: f32 = 1
+	if size.x <= 0.0 || size.y <= 0.0 do return
 	
 	// Draw background at original size
 	if box.background_color.a > 0 {
@@ -30,15 +32,16 @@ box_draw :: proc(box: ^syl.Box) {
 		border_pos := pos - {border_width, border_width}
 		border_size := size + {border_width * 2, border_width * 2}
 		border_roundness: f32 = 0
-        if box.border_radius > 0 do get_roundness(border_size, box.border_radius + border_width)
+		if box.border_radius > 0 do border_roundness = get_roundness(border_size, box.border_radius + border_width)
 		rl.DrawRectangleRoundedLinesEx({pos.x, pos.y, size.x, size.y}, border_roundness, 20, border_width, cast(rl.Color)box.border_color)
 	}
 }
 
 get_roundness :: proc(rect_size: rl.Vector2, radius_pixels: f32) -> f32 {
-    min_dimension := min(rect_size.x, rect_size.y)
-    roundness := (2 * radius_pixels / min_dimension)
-    return clamp(roundness, 0.0, 1.0)
+	min_dimension := min(rect_size.x, rect_size.y)
+	if min_dimension <= 0.0 do return 0.0
+	roundness := (2 * radius_pixels / min_dimension)
+	return clamp(roundness, 0.0, 1.0)
 }
 
 text_draw :: proc(text: ^syl.Text) {

@@ -3,8 +3,8 @@ package main
 import syl "../"
 import renderer "../renderer/raylib"
 import "core:math/ease"
-import rl "vendor:raylib"
 import "core:fmt"
+import rl "vendor:raylib"
 
 GREEN :: [4]u8{175,194,30, 255}
 BLUE :: [4]u8{0, 0, 255, 255}
@@ -74,14 +74,9 @@ primary_button := syl.Button_Styles_Override {
 	}
 }
 
-MessageKind :: enum {
+Message :: enum { 
 	Increment,
 	Decrement
-}
-
-Message :: struct {
-	kind: MessageKind,
-	amount: int,
 }
 
 Counter :: struct {
@@ -90,10 +85,10 @@ Counter :: struct {
 	counter_label: ^syl.Text,
 }
 
-counter_update:: proc(using counter: ^Counter, message: Message) {
-	switch message.kind {
-		case .Increment: count += message.amount
-		case .Decrement: count -= message.amount
+counter_update:: proc(using counter: ^Counter, message: ^Message) {
+	switch message^ {
+		case .Increment: count += 1
+		case .Decrement: count -= 1 
 	}
 
 	syl.text_set_content(counter_label, "%d", count)
@@ -110,12 +105,12 @@ counter :: proc() -> ^Counter {
 		layout_direction = .Left_To_Right,
 		gap = 10,
 		children = {
-			syl.button(text_content = "-", on_click = Message{.Decrement, 1}, style=&primary_button),
+			syl.button(text_content = "-", on_click = Message.Decrement, style=&primary_button),
 			syl.box(
 				syl.text("0", ref = &c.counter_label),
 				sizing=syl.Expand,
 			),
-			syl.button(text_content = "+", on_click = Message{.Increment, 1}),
+			syl.button(text_content = "+", on_click = Message.Increment),
 		}
 	)
 	return c
