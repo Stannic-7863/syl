@@ -26,31 +26,6 @@ With a retained-mode approach, Syl maintains a persistent representation of the 
 
 ![demo](./demo.gif)
 
-```odin
-app :: proc() -> ^syl.Element {
-	return syl.box(size = {SCREEN_W, SCREEN_H}, padding = 10, style_sheet = &style_sheet, children = {
-		syl.box(sizing=syl.Expand, padding = 20, children = {
-			syl.box(sizing = syl.Expand, gap = 0, padding = 0, children = {
-				syl.box(width_sizing =.Expand, padding = 14, layout_direction = .Left_To_Right, children = {
-					syl.box(sizing = syl.Expand, border_color = BLANK),
-					syl.text("REMOTE SENTRY WEAPON SYSTEM", wrap = false),
-					syl.box(sizing = syl.Expand, border_color = BLANK),
-				}),
-				syl.box(width_sizing = .Expand, padding = 0, layout_direction = .Left_To_Right, children = {
-					item("System mode", "AUTO-REMOTE"),	
-					item("Weapon status", "SAFE"),	
-					item("Neural link", "STANDBY"),	
-					item("Hull integrity", "91.3%"),	
-				}),
-				syl.box(sizing = syl.Expand, padding = 20, children = {
-					syl.text("Hull schematic floats center-screen, a wireframe...")
-				}),
-			})
-		})
-	})
-}
-```
-
 ### Contributing
 Syl is an open and exploratory project. Contributions, experiments, and discussions around its design and development are strongly encouraged, especially ideas that help shape the final architecture and long-term direction of the library.
 
