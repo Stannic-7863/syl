@@ -17,15 +17,13 @@ MUTED :: [4]u8{46,79,90, 255}
 
 style_sheet := syl.Style_Sheet {
 	box = {
-		default = {
-			padding = {0,0,0,10},
-			transitions = {
-				padding = {0.15, .Cubic_Out}
-			}
+		padding = {0,0,0,10},
+		transitions = {
+			padding = {0.15, .Linear},
 		},
 	},
 	button = {
-		default = {
+		normal = {
 			text_color = SECONDARY_COLOR,
 			font_size = 18,
 			background_color = BACKGROUND_COLOR,
@@ -33,7 +31,7 @@ style_sheet := syl.Style_Sheet {
 			border_color = MUTED,
 			transitions = {
 				background_color = {0.2, .Cubic_Out},
-				padding = {0.05, .Linear},
+				padding = {0.3, .Exponential_Out},
 			},
 		},
 		hover = {
@@ -43,6 +41,7 @@ style_sheet := syl.Style_Sheet {
 		},
 		press = {
 			background_color = WHITE,
+			padding = [4]f32{13,30,7,30},
 			transitions = syl.Box_Transitions{
 				background_color = {0, .Linear}
 			}
@@ -52,14 +51,6 @@ style_sheet := syl.Style_Sheet {
 		color = SECONDARY_COLOR,
 		font_size = 18
 	}
-}
-
-container_style := syl.Box_Style_Delta {
-	padding = [4]f32{0,0,0,10}
-}
-
-container_style_reset := syl.Box_Style_Delta {
-	padding = [4]f32{0,0,0,0}
 }
 
 Game_UI :: struct {
@@ -73,7 +64,7 @@ Game_UI :: struct {
 		credits: ^syl.Box,
 		exit: ^syl.Box,
 	},
-	current_menu: ^syl.Box,
+	current: ^syl.Box,
 }
 
 Message :: enum {
@@ -84,38 +75,21 @@ Message :: enum {
 	Exit,
 }
 
-game_ui_update :: proc(game_ui: ^Game_UI, msg: ^Message) {
-	if game_ui.current_menu != nil {
-		syl.box_apply_style_delta(game_ui.current_menu, container_style_reset, nil, style_sheet.box.default)
-		syl.element_remove_child(game_ui.container, game_ui.current_menu)
+game_ui_update :: proc(using game_ui: ^Game_UI, msg: ^Message) {
+	if current != nil {
+		syl.element_remove_child(container, current)
+		current.padding = 0
 	}
 
 	switch msg^ {
-		case .Start:
-			game_ui.current_menu = game_ui.sub_menus.start
-			syl.element_add_child(game_ui.container, game_ui.sub_menus.start)
-			syl.box_apply_style_delta(game_ui.sub_menus.start, container_style, nil, style_sheet.box.default)
-		case .Network:
-			game_ui.current_menu = game_ui.sub_menus.network
-			syl.element_add_child(game_ui.container, game_ui.sub_menus.network)
-			syl.box_apply_style_delta(game_ui.sub_menus.network, container_style, nil, style_sheet.box.default)
-		case .Settings:
-			game_ui.current_menu = game_ui.sub_menus.settings
-			syl.element_add_child(game_ui.container, game_ui.sub_menus.settings)
-			syl.box_apply_style_delta(game_ui.sub_menus.settings, container_style, nil, style_sheet.box.default)
-		case .Credits:
-			game_ui.current_menu = game_ui.sub_menus.credits
-			syl.element_add_child(game_ui.container, game_ui.sub_menus.credits)
-			syl.box_apply_style_delta(game_ui.sub_menus.credits, container_style, nil, style_sheet.box.default)
-		case .Exit:
-			game_ui.current_menu = game_ui.sub_menus.exit
-			syl.element_add_child(game_ui.container, game_ui.sub_menus.exit)
-			syl.box_apply_style_delta(game_ui.sub_menus.exit, container_style, nil, style_sheet.box.default)
+		case .Start:    current = sub_menus.start
+		case .Network:  current = sub_menus.network
+		case .Settings: current = sub_menus.settings
+		case .Credits:  current = sub_menus.credits
+		case .Exit:     current = sub_menus.exit
 	}
-}
 
-game_ui_destroy :: proc(game_ui: ^Game_UI) {
-	free(game_ui)
+	syl.element_add_child(container, current, use_transitions = true)
 }
 
 game_menu_ui :: proc() -> ^Game_UI {
@@ -201,7 +175,7 @@ exit :: proc() -> ^syl.Box {
 }
 
 main :: proc() {
-	rl.SetConfigFlags({.MSAA_4X_HINT})
+	rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
 	rl.InitWindow(SCREEN_W, SCREEN_H, "Game Settings")
 	rl.SetTargetFPS(60)
 
@@ -219,4 +193,13 @@ main :: proc() {
 	}
 
 	rl.CloseWindow()
+}
+
+game_ui_destroy :: proc(game_ui: ^Game_UI) {
+	syl.element_destroy(game_ui.sub_menus.start)
+	syl.element_destroy(game_ui.sub_menus.network)
+	syl.element_destroy(game_ui.sub_menus.settings)
+	syl.element_destroy(game_ui.sub_menus.credits)
+	syl.element_destroy(game_ui.sub_menus.exit)
+	free(game_ui)
 }

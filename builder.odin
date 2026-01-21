@@ -86,9 +86,8 @@ layout_box_init :: proc(
 	for child in box.children do child.parent = box
 	
 	if style_sheet != nil {
-		element_apply_style_recursive(box, style_sheet)
+		element_set_style_sheet_recursive(box, style_sheet, false)
 	}
-
 }
 
 box :: proc(
@@ -109,8 +108,7 @@ box :: proc(
     width_sizing:     Maybe(SizingKind) = nil,
     height_sizing:    Maybe(SizingKind) = nil,
     id: Maybe(string) = nil,
-	on_state_changed: 	  proc(e: ^Element, to: Box_State) = nil,
-	style:  		  ^Box_Styles_Override = nil,
+	style:  		  ^Box_Style_Override = nil,
 ) -> ^Box {
 	box := new(Box)
 	is_owner := false
@@ -156,10 +154,10 @@ text :: proc(
 	if wrap {
 		text.wrap = .Word
 	}
-	text.style.font_size = font_size
+	text.font_size = font_size
 	text.content = content
 	if val, ok := color.?; ok {
-		text.style.color = val
+		text.color = val
 		text.overrides += {.Color}
 	}
 

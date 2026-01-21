@@ -25,30 +25,31 @@ Text_Property :: enum {
 
 Text :: struct {
     using base: Element,
-	style: Text_Style,
     content: string,
 	wrap: Text_Wrap,
 	line_space: f32,
 	lines: [dynamic]Text_Line,
 	overrides: bit_set[Text_Property],
-	is_button_text: bool
+	is_button_text: bool,
+	color: [4]u8,
+	font_size: i32,
 }
 
 text_fit:: proc(text: ^Text) -> (f32, f32) {
 	cstr := strings.clone_to_cstring(text.content)
 	defer delete(cstr)
-	width:f32 = f32(rl.MeasureText(cstr, text.style.font_size))
+	width:f32 = f32(rl.MeasureText(cstr, text.font_size))
 
 	clear(&text.lines)
 
 	if text.wrap == .None {
 		append(&text.lines, Text_Line{
-			size = {width, f32(text.style.font_size)},
+			size = {width, f32(text.font_size)},
 			width = i32(width),
 			content = text.content,
 		})
-		text.size = {width, f32(text.style.font_size)}
-		text.min_size = {width, f32(text.style.font_size)}
+		text.size = {width, f32(text.font_size)}
+		text.min_size = {width, f32(text.font_size)}
 		width = width
 		return width, width
 	}
@@ -61,15 +62,15 @@ text_fit:: proc(text: ^Text) -> (f32, f32) {
 
 	for word in words {
 		cstr := strings.clone_to_cstring(word)
-		word_width := f32(rl.MeasureText(cstr, text.style.font_size))
+		word_width := f32(rl.MeasureText(cstr, text.font_size))
 		delete(cstr)
 		max_word_width = max(max_word_width, word_width)
 	}
-	font_size := text.style.font_size	
+	font_size := text.font_size	
 	if len(text.content) == 0 do font_size = 0
 	
 	text.size = {width, f32(font_size)}
-	text.min_size = {max_word_width, f32(text.style.font_size)}
+	text.min_size = {max_word_width, f32(text.font_size)}
 	return width, max_word_width
 }
 
@@ -96,14 +97,14 @@ text_wrap :: proc(e: ^Element) {
 			return
 		}
 		
-		space_width := measure_text(" ", text.style.font_size)
+		space_width := measure_text(" ", text.font_size)
 		
 		current_line := strings.builder_make()
 		defer strings.builder_destroy(&current_line)
 		current_width: f32 = 0
 		
 		for word in words {
-			word_width := measure_text(word, text.style.font_size)
+			word_width := measure_text(word, text.font_size)
 			
 			// Check if word fits on current line
 			test_width := word_width
@@ -113,7 +114,7 @@ text_wrap :: proc(e: ^Element) {
 			
 			// Start new line if needed
 			if test_width > max_width && strings.builder_len(current_line) > 0 {
-				add_line(&text.lines, strings.to_string(current_line), current_width, text.style.font_size)
+				add_line(&text.lines, strings.to_string(current_line), current_width, text.font_size)
 				strings.builder_reset(&current_line)
 				strings.write_string(&current_line, word)
 				current_width = word_width
@@ -128,11 +129,11 @@ text_wrap :: proc(e: ^Element) {
 		
 		// Add final line
 		if strings.builder_len(current_line) > 0 {
-			add_line(&text.lines, strings.to_string(current_line), current_width, text.style.font_size)
+			add_line(&text.lines, strings.to_string(current_line), current_width, text.font_size)
 		}
 		
 		// Update text dimensions
-		text.size.y = f32(len(text.lines)) * f32(text.style.font_size)
+		text.size.y = f32(len(text.lines)) * f32(text.font_size)
 		text.size.x = max_width  // Keep container width, don't expand
 	} else {
 		for child in e.children do text_wrap(child)
@@ -177,18 +178,31 @@ Text_Style :: struct {
 	font_size: i32,
 }
 
-Text_Style_Delta :: struct {
+Text_Style_Override:: struct {
 	color: Maybe([4]u8),
 	font_size: Maybe(i32),
 }
 
-text_set_style_from_box_style :: proc(text: ^Text, style: Box_Style) {
-	text.style.color = style.text_color
-	text.style.font_size = style.font_size
+text_set_style_from_box_style :: proc(text: ^Text, style: ^Box_Style_Override) {
+	if style != nil {
+		if t, ok := style.text_color.?; ok {
+			text.color = t
+		}
+
+		if f, ok := style.font_size.?; ok {
+			text.font_size = f
+		}
+		return
+	}
+	if text.style_sheet != nil {
+		default := text.style_sheet.button.normal
+		text.color = default.text_color
+		text.font_size = default.font_size
+	}
 }
 
 
-text_set_style_from_box_style_delta :: proc(text: ^Text, new: Box_Style_Delta, delta: Maybe(Box_Style_Delta), default: Box_Style) {
+text_set_style_from_box_style_override :: proc(text: ^Text, new: Box_Style_Override, delta: Maybe(Box_Style_Override), default: Box_Style) {
 	text_color := default.text_color
 	size := default.font_size
 
@@ -208,26 +222,26 @@ text_set_style_from_box_style_delta :: proc(text: ^Text, new: Box_Style_Delta, d
 		size = f
 	}
 
-	text.style.color = text_color
-	text.style.font_size = size
+	text.color = text_color
+	text.font_size = size
 }
 
-text_set_style_delta :: proc(text: ^Text, color: [4]u8, font_size: i32) {
-	text.style.color = color
-	text.style.font_size = font_size
+text_set_style_override :: proc(text: ^Text, color: [4]u8, font_size: i32) {
+	text.color = color
+	text.font_size = font_size
 }
 
 text_appy_style :: proc(text: ^Text, style: Text_Style) {
-	text.style.color = style.color
-	text.style.font_size = style.font_size
+	text.color = style.color
+	text.font_size = style.font_size
 }
 
-text_appy_style_delta :: proc(text: ^Text, style: Text_Style_Delta, default: Text_Style) {
+text_appy_style_override :: proc(text: ^Text, style: Text_Style_Override, default: Text_Style) {
 	if val, ok := style.color.?; ok {
-		text.style.color = val
+		text.color = val
 	}
 	if val, ok := style.font_size.?; ok {
-		text.style.font_size = val
+		text.font_size = val
 	}
 }
 

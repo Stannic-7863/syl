@@ -51,10 +51,10 @@ SizingKind :: enum {
 
 Sizing :: [2]SizingKind
 
-element_add_child:: proc(element: ^Element, child: ^Element) { 
+element_add_child:: proc(element: ^Element, child: ^Element, use_transitions: bool = false) { 
 	if child.parent == element do return
 	append_elem(&element.children, child)
-	element_apply_style_recursive(child, element.style_sheet)
+	element_set_style_sheet_recursive(child, element.style_sheet, use_transitions)
 	child.parent = element
 	element_set_owner(child, element.owner)
 }

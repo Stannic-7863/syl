@@ -1,39 +1,37 @@
 package syl
 
 Style_Sheet :: struct {
-	box: Box_State_Styles,
+	box: Box_Style,
 	text: Text_Style,
 	button: Button_Styles,
-	boxes: map[string]Box_State_Styles
 }
 
 // Set the values of non-overridden properties of Element and its children from the given StyleSheet
-element_apply_style :: proc(element: ^Element, style: ^Style_Sheet) {
+element_set_style_sheet :: proc(element: ^Element, style: ^Style_Sheet, use_transitions: bool = true) {
 	element.style_sheet = style
 
 	#partial switch element.type {
 	case .Box:
-		box_apply_style_default(cast(^Box)element, style.box.default)
+		box := cast(^Box)element
+		box_set_style(box, box.style, use_transitions)
 	case .Text:
 		text := cast(^Text)element
 		if text.is_button_text do return
 		if !(.Color in text.overrides) {
-			text.style.color = style.text.color
+			text.color = style.text.color
 		}
-		return
 	case .Button:
-		b := cast(^Button)element
-		if b.style != nil {
-			box_apply_style_delta(b, b.style.default, nil, style.button.default)
-			if b.text != nil do text_set_style_from_box_style_delta(b.text, b.style.default, nil, style.button.default)
-		} else {
-			box_apply_style_default(b, style.button.default)
-			if b.text != nil do text_set_style_from_box_style(b.text, style.button.default)
+		button := cast(^Button)element
+		b_style:  = button.style != nil ? &button.style.normal : nil
+		button_set_style(button, b_style, use_transitions)
+		if button.text != nil {
+			button.text.style_sheet = style
+			text_set_style_from_box_style(button.text, b_style)
 		}
 	}
 }
 
-element_apply_style_recursive :: proc(element: ^Element, style: ^Style_Sheet) {
-	element_apply_style(element, style)
-	for child in element.children do element_apply_style_recursive(child, style)
+element_set_style_sheet_recursive :: proc(element: ^Element, style: ^Style_Sheet, animate_properties: bool = true) {
+	element_set_style_sheet(element, style, animate_properties)
+	for child in element.children do element_set_style_sheet_recursive(child, style, animate_properties)
 }

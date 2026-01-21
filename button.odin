@@ -42,34 +42,30 @@ button_change_state :: proc(button: ^Button, state: Button_State) {
 	}
 
     button.button_state = state
+
 	if button.style_sheet == nil do return
     
-    default := button.style_sheet.button.default
-    hover := button.style_sheet.button.hover
-    press := button.style_sheet.button.press
+    hover :=  &button.style_sheet.button.hover
+    press :=  &button.style_sheet.button.press
 
-    delta: Maybe(Box_Style_Delta)
     if button.style != nil {
-        delta = button.style.default
-        hover = button.style.hover
-        press = button.style.press
+        hover =    &button.style.hover
+        press =    &button.style.press
     }
+    
+    rl.SetMouseCursor(.DEFAULT) 
 
     switch state {
     case .Default: 
-        if button.style != nil {
-            box_apply_style_delta(button, button.style.default, nil, default)
-            if button.text != nil do text_set_style_from_box_style_delta(button.text, button.style.default, delta, default)
-        } else {
-            box_apply_style_default(button, default)
-            if button.text != nil do text_set_style_from_box_style(button.text, default)
-        }
+        button_set_style(button, nil)
+        if button.text != nil do text_set_style_from_box_style(button.text, nil)
     case .Hover:
-        box_apply_style_delta(button, hover, delta, default)
-        if button.text != nil do text_set_style_from_box_style_delta(button.text, hover, delta, default)
+        rl.SetMouseCursor(.POINTING_HAND) 
+        button_set_style(button, hover)
+        if button.text != nil do text_set_style_from_box_style(button.text, hover)
     case .Press:   
-        box_apply_style_delta(button, press, delta, default)
-        if button.text != nil do text_set_style_from_box_style_delta(button.text, press, delta, default)
+        button_set_style(button, press)
+        if button.text != nil do text_set_style_from_box_style(button.text, press)
     }
 }
 
@@ -109,13 +105,37 @@ update_button :: proc(button: ^Button) {
 
 // Style ______________________________________________________________________
 Button_Styles :: struct {
-	default: Box_Style,
-	hover:   Box_Style_Delta,
-	press:   Box_Style_Delta
+	normal: Box_Style,
+	hover:   Box_Style_Override,
+	press:   Box_Style_Override
 }
 
 Button_Styles_Override :: struct {
-	default: Box_Style_Delta,
-	hover:   Box_Style_Delta,
-	press:   Box_Style_Delta
+	normal:  Box_Style_Override,
+	hover:   Box_Style_Override,
+	press:   Box_Style_Override,
+}
+
+button_set_style_default :: proc(button: ^Button, style: ^Box_Style_Override, use_transitions: bool = true) {
+    default := button.style_sheet.button.normal
+    fallback: ^Box_Style_Override
+    if button.style != nil {
+        fallback = &button.style.normal
+    }
+
+    layout_box_set_style(button, style, fallback, default, use_transitions)
+}
+
+button_set_style :: proc(button: ^Button, style: ^Box_Style_Override, use_transitions: bool = true) {
+    default := button.style_sheet.button.normal
+    fallback: ^Box_Style_Override
+    if button.style != nil {
+        fallback = &button.style.normal
+    }
+
+    layout_box_set_style(button, style, fallback, default, use_transitions)
+}
+
+button_apply_style :: proc(button: ^Button, style: Box_Style_Override, use_transitions: bool = true) {
+    layout_box_apply_style(button, style, use_transitions)
 }

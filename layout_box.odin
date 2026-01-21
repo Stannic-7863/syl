@@ -458,71 +458,6 @@ Layout_layout_box_Transitions:: struct {
 	padding: Transition,
 }
 
-layout_box_apply_style_default :: proc(box: ^Layout_Box, style: Box_Style) {
-	if !(.Gap in box.overrides) {
-		box.gap = style.gap
-	}
-
-	if !(.Background_Color in box.overrides) {
-		t := style.transitions.background_color
-		if t.duration > 0 {
-			animate_color(&box.background_color, style.background_color, t.duration, t.ease)
-		} else {
-			box.background_color = style.background_color
-		}
-		box.background_color = style.background_color
-	}
-
-	if !(.Border_Color in box.overrides) {
-		box.border_color = style.border_color
-	}
-
-	if !(.Border_Radius in box.overrides) {
-		box.border_radius = style.border_radius
-	}
-
-	if !(.Padding in box.overrides) {
-		using style.transitions.padding
-        animate_float(&box.padding[0], style.padding[0], duration, ease)
-        animate_float(&box.padding[1], style.padding[1], duration, ease)
-        animate_float(&box.padding[2], style.padding[2], duration, ease)
-        animate_float(&box.padding[3], style.padding[3], duration, ease)
-	}
-}
-
-layout_box_apply_style_delta:: proc(box: ^Layout_Box, delta: Box_Style_Delta, default: Box_Style) {
-	transitions := default.transitions
-
-	if val, ok := delta.transitions.?; ok {
-		transitions = val
-	}
-
-	if val, ok := delta.gap.?; ok && !(.Gap in box.overrides) {
-		box.gap = val 
-	}
-
-	if val, ok := delta.background_color.?; ok && !(.Background_Color in box.overrides) {
-		using transitions.background_color
-		animate_color(&box.background_color, val, duration, ease)
-	}
-
-	if val, ok := delta.border_color.?; ok && !(.Border_Color in box.overrides) {
-		box.border_color = val
-	}
-
-	if val, ok := delta.border_radius.?; ok && !(.Border_Radius in box.overrides) {
-        box.border_radius = val
-	}
-
-	if val, ok := delta.padding.?; ok && !(.Padding in box.overrides) {
-		using transitions.padding
-        animate_float(&box.padding[0], val[0], duration, ease)
-        animate_float(&box.padding[1], val[1], duration, ease)
-        animate_float(&box.padding[2], val[2], duration, ease)
-        animate_float(&box.padding[3], val[3], duration, ease)
-	}
-}
-
 layout_box_destroy:: proc(box: ^Layout_Box) {
     layout_box_deinit(box)
     free(box)
@@ -531,4 +466,107 @@ layout_box_destroy:: proc(box: ^Layout_Box) {
 layout_box_deinit:: proc(box: ^Layout_Box) {
     if box == nil do return
     base_element_deinit(&box.element)
+}
+
+// STYLE
+
+// Sets the style of the layout box, applying overrides on top of default style
+layout_box_set_style:: proc(box: ^Layout_Box, new: ^Box_Style_Override, style: ^Box_Style_Override, default: Box_Style, use_transitions: bool = true) {
+	transitions := default.transitions
+    gap := default.gap
+    padding := default.padding
+    background_color := default.background_color
+    border_radius := default.border_radius
+    border_color := default.border_color
+
+    if style != nil {
+        if g, ok := style.gap.?; ok do gap = g
+        if p, ok := style.padding.?; ok do padding = p
+        if bg, ok := style.background_color.?; ok do background_color = bg
+        if br, ok := style.border_radius.?; ok do border_radius = br
+        if bc, ok := style.border_color.?; ok do border_color = bc
+        if val, ok := style.transitions.?; ok {
+            transitions = val
+        }
+    }
+    
+    if new != nil {
+        if g, ok := new.gap.?; ok do gap = g
+        if p, ok := new.padding.?; ok do padding = p
+        if bg, ok := new.background_color.?; ok do background_color = bg
+        if br, ok := new.border_radius.?; ok do border_radius = br
+        if bc, ok := new.border_color.?; ok do border_color = bc
+        if val, ok := new.transitions.?; ok {
+            transitions = val
+        }
+    }
+
+	if  !(.Gap in box.overrides) {
+		box.gap = gap
+	}
+
+	if !(.Background_Color in box.overrides) {
+        if use_transitions {
+            using transitions.background_color
+            animate_color(&box.background_color, background_color, duration, ease)
+        } else {
+            box.background_color = background_color
+        }
+	}
+
+	if  !(.Border_Color in box.overrides) {
+		box.border_color = border_color
+	}
+
+	if  !(.Border_Radius in box.overrides) {
+        box.border_radius = border_radius
+	}
+
+	if !(.Padding in box.overrides) {
+        if use_transitions {
+            using transitions.padding
+            animate_float(&box.padding[0], padding[0], duration, ease)
+            animate_float(&box.padding[1], padding[1], duration, ease)
+            animate_float(&box.padding[2], padding[2], duration, ease)
+            animate_float(&box.padding[3], padding[3], duration, ease)
+        } else {
+            box.padding = padding
+        }
+	}
+}
+
+// Applies style overrides on top of current style
+layout_box_apply_style:: proc(box: ^Layout_Box, new: Box_Style_Override, use_transitions: bool = true) {
+    if gap, ok := new.gap.?; ok && !(.Gap in box.overrides) {
+		box.gap = gap
+	}
+
+    if padding, ok := new.padding.?; ok && !(.Padding in box.overrides) {
+        if t, ok := new.transitions.?; ok && use_transitions  {
+            using t.padding
+            animate_float(&box.padding[0], padding[0], duration, ease)
+            animate_float(&box.padding[1], padding[1], duration, ease)
+            animate_float(&box.padding[2], padding[2], duration, ease)
+            animate_float(&box.padding[3], padding[3], duration, ease)
+        } else {
+            box.padding = padding
+        }
+    }
+
+    if bg, ok := new.background_color.?; ok && !(.Background_Color in box.overrides) {
+        if t, ok := new.transitions.?; ok && use_transitions {
+            using t.background_color
+            animate_color(&box.background_color, bg, duration, ease)
+        } else {
+            box.background_color = bg
+        }
+    }
+    
+    if br, ok := new.border_radius.?; ok && !(.Border_Radius in box.overrides) {
+        box.border_radius = br
+    }
+
+    if bc, ok := new.border_color.?; ok && !(.Border_Color in box.overrides) {
+        box.border_color = bc
+    }
 }

@@ -21,12 +21,10 @@ SCREEN_H :: 500
 
 style_sheet := syl.Style_Sheet {
 	box = {
-		default = {
-			padding = 0
-		},
+		padding = 0
 	},
 	button = {
-		default = {
+		normal = { 
 			text_color = BLACK,
 			font_size = 18,
 			background_color = GREEN,
@@ -53,7 +51,7 @@ style_sheet := syl.Style_Sheet {
 }
 
 primary_button := syl.Button_Styles_Override {
-	default = {
+	normal = {
 		text_color = WHITE,
 		font_size = 18,
 		background_color = BLUE,

@@ -47,7 +47,7 @@ get_roundness :: proc(rect_size: rl.Vector2, radius_pixels: f32) -> f32 {
 text_draw :: proc(text: ^syl.Text) {
     if len(text.lines) == 0 do return
 
-    font_size: i32 = text.style.font_size
+    font_size: i32 = text.font_size
     line_height: f32 = f32(font_size)
 
     //rl.DrawRectangleLines(i32(text.global_position.x), i32(text.global_position.y), i32(text.size.x), i32(text.size.y), rl.GRAY)
@@ -62,7 +62,7 @@ text_draw :: proc(text: ^syl.Text) {
             line.global_position,
             f32(font_size),
 			1,
-            cast(rl.Color)text.style.color,
+            cast(rl.Color)text.color,
         )
     }
 }
