@@ -13,7 +13,7 @@ Context :: struct {
 	mouse_down_bits:	 Mouse_Set,
 	mouse_pressed_bits:	 Mouse_Set,
 	mouse_released_bits: Mouse_Set,
-	measure_text: proc(string, int) -> int,
+	measure_text: proc(string, rawptr, int, f32) -> int,
 	transitions: struct {
 		color: [dynamic]Color_Transition,
 	    float: [dynamic]Float_Transition,
@@ -29,7 +29,7 @@ Mouse :: enum u32 {
 Mouse_Set :: distinct bit_set[Mouse; u32]
 
 create_context :: proc(
-	measure_text: proc(string, int) -> int,
+	measure_text: proc(string, rawptr, int, f32) -> int,
 	allocator := context.allocator,
 ) {
     ctx = new(Context, allocator)

@@ -145,6 +145,7 @@ text :: proc(
 	font_size: int = 18,
 	color: Maybe([4]u8) = nil,
 	wrap: bool = true,
+	font: rawptr = nil,
 ) -> ^Text {
 	text := new(Text)
     if r, ok := ref.?; ok {
@@ -155,6 +156,7 @@ text :: proc(
 	if wrap {
 		text.wrap = .Word
 	}
+	text.font = font
 	text.font_size = font_size
 	text.content = content
 	if val, ok := color.?; ok {

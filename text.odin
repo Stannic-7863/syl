@@ -30,10 +30,12 @@ Text :: struct {
 	is_button_text: bool,
 	color: [4]u8,
 	font_size: int,
+	font: rawptr,
+	spacing: f32,
 }
 
 text_fit:: proc(text: ^Text) -> (f32, f32) {
-	width:f32 = f32(ctx.measure_text(text.content, text.font_size))
+	width:f32 = f32(ctx.measure_text(text.content, text.font, text.font_size, text.spacing))
 
 	clear(&text.lines)
 
@@ -56,7 +58,7 @@ text_fit:: proc(text: ^Text) -> (f32, f32) {
 	defer delete(words)
 
 	for word in words {
-		word_width := f32(ctx.measure_text(word, text.font_size))
+		word_width := f32(ctx.measure_text(word, text.font, text.font_size, text.spacing))
 		max_word_width = max(max_word_width, word_width)
 	}
 	font_size := text.font_size	
@@ -90,14 +92,14 @@ text_wrap :: proc(e: ^Element) {
 			return
 		}
 		
-		space_width := f32(ctx.measure_text(" ", text.font_size))
+		space_width := f32(ctx.measure_text(" ", text.font, text.font_size, text.spacing))
 		
 		current_line := strings.builder_make()
 		defer strings.builder_destroy(&current_line)
 		current_width: f32 = 0
 		
 		for word in words {
-			word_width := f32(ctx.measure_text(word, text.font_size))
+			word_width := f32(ctx.measure_text(word, text.font, text.font_size, text.spacing))
 			
 			// Check if word fits on current line
 			test_width := word_width
@@ -132,7 +134,6 @@ text_wrap :: proc(e: ^Element) {
 		for child in e.children do text_wrap(child)
 	}
 }
-
 
 add_line :: proc(lines: ^[dynamic]Text_Line, content: string, width: f32, font_size: int) {
 	append(lines, Text_Line{

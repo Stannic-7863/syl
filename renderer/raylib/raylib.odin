@@ -18,10 +18,14 @@ deinit :: proc() {
 	syl.destroy_context()
 }
 
-measure_text :: proc(s: string, font_size: int) -> int {
+measure_text :: proc(s: string, font: rawptr, font_size: int, spacing: f32) -> int {
 	cstr := strings.clone_to_cstring(s)
 	defer delete(cstr)
-	return int(rl.MeasureText(cstr, i32(font_size)))
+	if font == nil {
+		return int(rl.MeasureText(cstr, i32(font_size)))
+	} else {
+		return int(rl.MeasureTextEx((cast(^rl.Font)font)^, cstr, f32(font_size), spacing).x)
+	}
 }
 
 update :: proc(root: ^syl.Element) {
@@ -89,13 +93,23 @@ text_draw :: proc(text: ^syl.Text) {
     for line, i in text.lines {
         line_cstr := strings.clone_to_cstring(line.content)
         defer delete(line_cstr)
-        
-        rl.DrawText(
-            line_cstr,
-            i32(line.global_position.x),
-            i32(line.global_position.y),
-            font_size,
-            cast(rl.Color)text.color,
-        )
+		if text.font == nil {
+			rl.DrawText(
+				line_cstr,
+				i32(line.global_position.x),
+				i32(line.global_position.y),
+				font_size,
+				cast(rl.Color)text.color,
+			)
+		} else {
+			rl.DrawTextEx(
+				(cast(^rl.Font)text.font)^,
+				line_cstr,
+				line.global_position,
+				f32(text.font_size),
+				text.spacing,
+				cast(rl.Color)text.color,
+			)
+		}
     }
 }
