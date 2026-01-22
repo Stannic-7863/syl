@@ -118,6 +118,7 @@ box :: proc(
 			element = h.element,
 			handler = h.handler,
 			destroy = h.destroy,
+			message_type = h.message_type
 		}
 		is_owner = true
 	} else {
@@ -203,8 +204,9 @@ button:: proc(
     width_sizing:     Maybe(SizingKind) = nil,
     height_sizing:    Maybe(SizingKind) = nil,
     style:    		 ^Button_Styles_Override = nil,
-	on_click: 		  Maybe(any) = nil,
-	on_mouse_over: 	  Maybe(any) = nil,
+	on_click: 		  any = nil,
+	on_mouse_over: 	  any = nil,
+	loc := #caller_location,
 ) -> ^Button {
 	button: ^Button
 	is_owner := false
@@ -214,12 +216,13 @@ button:: proc(
 			element = h.element,
 			handler = h.handler,
 			destroy = h.destroy,
+			message_type = h.message_type
 		}
 		is_owner = true
 	} else {
 		button = new(Button)
 	}
-
+	button.constructor_caller_loc = loc
 	button.type = .Button
 	if r, ok := ref.?; ok {
 		r^ = button
@@ -234,12 +237,12 @@ button:: proc(
 
 	button.style = style
 
-	if val, ok := on_click.?; ok {
-		button.on_click = copy_any_to_heap(val)
+	if on_click != nil {
+		button.on_click = copy_any_to_heap(on_click)
 	}
 	
-	if val, ok := on_mouse_over.?; ok {
-		button.on_mouse_over = copy_any_to_heap(val)
+	if on_mouse_over != nil {
+		button.on_mouse_over = copy_any_to_heap(on_mouse_over)
 	}
 
 	if val, ok := text_content.?; ok {

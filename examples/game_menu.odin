@@ -4,6 +4,7 @@ import syl "../"
 import renderer "../renderer/raylib"
 import "core:math/ease"
 import rl "vendor:raylib"
+import "core:fmt"
 
 SCREEN_W :: 800
 SCREEN_H :: 500
@@ -54,8 +55,8 @@ style_sheet := syl.Style_Sheet {
 }
 
 Game_UI :: struct {
-	using base: syl.Box,
 	count: int,
+	using base: syl.Box,
 	container: ^syl.Box,
 	sub_menus: struct {
 		start: ^syl.Box,
@@ -96,7 +97,6 @@ game_menu_ui :: proc() -> ^Game_UI {
 	game_ui := new(Game_UI)
 	// This allows the box to receive messages
 	handler := syl.make_handler(game_ui, syl.Box, Message, game_ui_update, game_ui_destroy)
-
 	game_ui.sub_menus.start = start()
 	game_ui.sub_menus.settings = settings()
 	game_ui.sub_menus.network = network()
@@ -104,7 +104,7 @@ game_menu_ui :: proc() -> ^Game_UI {
 	game_ui.sub_menus.exit = exit()
 
 	// With a handler syl.box will initialize Game_UI instead creating a new Box
-	game_ui.box = syl.box(size = {SCREEN_H, SCREEN_H}, style_sheet = &style_sheet, handler = handler, children = {
+	syl.box(size = {SCREEN_H, SCREEN_H}, style_sheet = &style_sheet, handler = handler, children = {
 		syl.center(
 			syl.box(
 				syl.box(gap=10, children = {
@@ -182,6 +182,8 @@ main :: proc() {
 	ui := game_menu_ui()
 
 	renderer.init()
+	defer renderer.deinit()
+
 	for !rl.WindowShouldClose() {
 		renderer.update(ui)
 

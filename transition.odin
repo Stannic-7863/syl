@@ -14,11 +14,6 @@ Animatable_Property :: enum {
     Background_Color
 }
 
-Transition_Manager :: struct {
-    color_transitions: [dynamic]Color_Transition,
-    transitions: [dynamic]Float_Transition,
-}
-
 Color_Transition :: struct {
     target: ^[4]u8,
     start: [4]u8,
@@ -40,21 +35,21 @@ Float_Transition :: struct {
 update_transitions :: proc() {
     curr_tick := time.tick_now()
 
-    for i := len(transition_manager.color_transitions) - 1; i >= 0; i -= 1 { 
-        t := &transition_manager.color_transitions[i]
-        
+    for i := len(ctx.transitions.color) - 1; i >= 0; i -= 1 { 
+        t := &ctx.transitions.color[i]
+
         elapsed := f32(time.duration_seconds(time.tick_since(t.start_t)))
         progress := clamp(elapsed / t.duration, 0.0, 1.0)
         
         t.target^ = interpolate_color(t.start, t.end, ease.ease(t.easing, progress))
         
         if progress >= 1.0 || t.target^ == t.end {
-            unordered_remove(&transition_manager.color_transitions, i)
+            unordered_remove(&ctx.transitions.color, i)
         }
     }
 
-    for i := len(transition_manager.transitions) - 1; i >= 0; i -= 1 { 
-        t := &transition_manager.transitions[i]
+    for i := len(ctx.transitions.float) - 1; i >= 0; i -= 1 { 
+        t := &ctx.transitions.float[i]
         
         elapsed := f32(time.duration_seconds(time.tick_since(t.start_t)))
         progress := clamp(elapsed / t.duration, 0.0, 1.0)
@@ -62,16 +57,16 @@ update_transitions :: proc() {
         t.target^ = interpolate_float(t.start, t.end, ease.ease(t.easing, progress))
         
         if progress >= 1.0 || t.target^ == t.end {
-            unordered_remove(&transition_manager.transitions, i)
+            unordered_remove(&ctx.transitions.float, i)
         }
     }
 }
 
 animate_float:: proc(target: ^f32, end_val: f32, duration: f32, easing: ease.Ease) {
     // Clear existing transition for this pointer if it exists
-    for t, i in transition_manager.transitions {
+    for t, i in ctx.transitions.float {
         if t.target == target {
-            unordered_remove(&transition_manager.transitions, i)
+            unordered_remove(&ctx.transitions.float, i)
             break
         }
     }
@@ -84,7 +79,7 @@ animate_float:: proc(target: ^f32, end_val: f32, duration: f32, easing: ease.Eas
         return
     }
 
-    append(&transition_manager.transitions, Float_Transition{
+    append(&ctx.transitions.float, Float_Transition{
         target   = target,
         start    = target^,
         end      = end_val,
@@ -96,9 +91,9 @@ animate_float:: proc(target: ^f32, end_val: f32, duration: f32, easing: ease.Eas
 
 animate_color :: proc(target: ^[4]u8, end_val: [4]u8, duration: f32, easing: ease.Ease) {
     // Clear existing transition for this pointer if it exists
-    for t, i in transition_manager.color_transitions {
+    for t, i in ctx.transitions.color {
         if t.target == target {
-            unordered_remove(&transition_manager.color_transitions, i)
+            unordered_remove(&ctx.transitions.color, i)
             break
         }
     }
@@ -110,7 +105,7 @@ animate_color :: proc(target: ^[4]u8, end_val: [4]u8, duration: f32, easing: eas
 
     if target^ == end_val do return
 
-    append(&transition_manager.color_transitions, Color_Transition{
+    append(&ctx.transitions.color, Color_Transition{
         target   = target,
         start    = target^,
         end      = end_val,

@@ -10,8 +10,12 @@ mouse_buttons_map := [syl.Mouse]rl.MouseButton{
 	.MIDDLE  = .MIDDLE,
 }
 
-init :: proc() {
-	syl.ctx.measure_text = measure_text
+init :: proc(allocator := context.allocator) {
+	syl.create_context(measure_text, allocator)
+}
+
+deinit :: proc() {
+	syl.destroy_context()
 }
 
 measure_text :: proc(s: string, font_size: int) -> int {
@@ -21,7 +25,6 @@ measure_text :: proc(s: string, font_size: int) -> int {
 }
 
 update :: proc(root: ^syl.Element) {
-	assert(syl.ctx.measure_text != nil)
 	syl.input_mouse_move(rl.GetMousePosition())
 
 	for button_rl, button_mu in mouse_buttons_map {

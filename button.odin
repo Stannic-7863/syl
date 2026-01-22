@@ -1,5 +1,5 @@
 package syl
-
+import "core:fmt"
 Button_State :: enum {
     Default,
     Hover,
@@ -11,8 +11,8 @@ Button :: struct {
     text: ^Text,
     style: ^Button_Styles_Override,
 	button_state: Button_State,
-    on_click: Maybe(any),
-    on_mouse_over: Maybe(any),
+    on_click: any,
+    on_mouse_over: any,
 }
 
 button_destroy:: proc(button: ^Button) {
@@ -23,11 +23,11 @@ button_destroy:: proc(button: ^Button) {
 button_deinit :: proc(button: ^Button) {
     if button == nil do return
     layout_box_deinit(button)
-    if val, ok := button.on_click.? ; ok {
-        free(val.data)
+    if button.on_click != nil {
+        free(button.on_click.data)
     }
-    if val, ok := button.on_mouse_over.? ; ok {
-        free(val.data)
+    if button.on_mouse_over != nil {
+        free(button.on_mouse_over.data)
     }
 }
 
@@ -57,11 +57,11 @@ button_change_state :: proc(button: ^Button, state: Button_State) {
     }
 }
 
-button_dispatch :: proc(button: ^Button, message: Maybe(any)) {
-    if m, ok := message.?; ok {
+button_dispatch :: proc(button: ^Button, message: any) {
+    if message != nil {
         if button.owner != nil {
             if h, ok := button.owner.handler.?; ok {
-                h.handler(h.element, m.data)
+                h.handler(h.element, message.data)
             }
         }
     }
