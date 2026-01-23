@@ -36,8 +36,8 @@ style_sheet := syl.Style_Sheet {
 				MUTED,         // bottom
 				PRIMARY_COLOR, // left
 			},
-			border_thickness = {2,2,2,8},
-			border_radius = {20,0,0,0},
+			border_thickness = {2,2,2,12},
+			border_radius = {0,0,20,0},
 			transitions = {
 				background_color = {0.2, .Cubic_Out},
 				padding = {0.1, .Cubic_Out},
@@ -50,6 +50,7 @@ style_sheet := syl.Style_Sheet {
 		},
 		press = {
 			background_color = WHITE,
+			border_color = WHITE,
 			padding = [4]f32{13,30,7,30},
 			transitions = syl.Box_Transitions{
 				background_color = {0, .Linear}
@@ -183,7 +184,7 @@ exit :: proc() -> ^syl.Box {
 }
 
 main :: proc() {
-	rl.SetConfigFlags({.VSYNC_HINT})
+	//rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(SCREEN_W, SCREEN_H, "Game Settings")
 	ui := game_menu_ui()
 
