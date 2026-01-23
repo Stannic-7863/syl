@@ -7,16 +7,16 @@ layout(location = 3) in vec2 in_size;
 layout(location = 4) in vec2 in_uv;
 layout(location = 5) in vec2 in_text_uv;
 layout(location = 6) in vec4 in_border_color[4];
-layout(location = 10) flat in int in_render_type;
+layout(location = 11) flat in ivec4 in_flags;
 
 layout(location = 0) out vec4 out_color;
 
-// layout(set = 2, binding = 0) uniform sampler2D font_sampler;
+layout(set = 2, binding = 0) uniform sampler2D font_sampler;
 
 float rect_select_side(vec2 pos, vec4 s) {
-	s.xy = pos.x < 0 ? s.xw : s.yz;
-	s.x = pos.y > 0 ? s.x : s.y;
-	return s.x;
+  s.xy = pos.x < 0 ? s.xw : s.yz;
+  s.x = pos.y > 0 ? s.x : s.y;
+  return s.x;
 }
 
 vec4 rect_get_blended_border_color(vec2 p, vec2 half_size) {
@@ -59,24 +59,27 @@ float sdf_rect(vec2 pos, vec2 half_size, float radius) {
          radius; // NEGATIVE inside, POSITIVE outside
 }
 
-
 void main() {
- 
-	vec2 h_size = in_size * 0.5;
-	vec2 s_pos = in_uv * in_size - h_size;
+  if (in_flags.x == 0) {
+    vec2 h_size = in_size * 0.5;
+    vec2 s_pos = in_uv * in_size - h_size;
 
-	float rad = rect_select_side(s_pos, in_radius);
+    float rad = rect_select_side(s_pos, in_radius);
 
-	float thickness_blended = rect_get_blended_thickness(s_pos, h_size, in_border_thickness);
-	vec4 border_color_blended = rect_get_blended_border_color(s_pos, h_size);
+    float thickness_blended =
+        rect_get_blended_thickness(s_pos, h_size, in_border_thickness);
+    vec4 border_color_blended = rect_get_blended_border_color(s_pos, h_size);
 
-	float sdf = sdf_rect(s_pos, h_size, rad);
+    float sdf = sdf_rect(s_pos, h_size, rad);
 
-	float stroke = smoothstep(-1, 1, thickness_blended / 2 - abs(sdf + thickness_blended / 2));
+    float stroke = smoothstep(
+        -1, 1, thickness_blended / 2 - abs(sdf + thickness_blended / 2));
+    float fill = smoothstep(-1, 1, -sdf - thickness_blended);
 
-	float fill = smoothstep(-1, 1, -sdf - thickness_blended);
-
-	vec4 stroke_color = vec4(border_color_blended) * stroke;
-	vec4 fill_color = vec4(in_color) * fill;
-	out_color = fill_color + stroke_color;
+    vec4 stroke_color = vec4(border_color_blended) * stroke;
+    vec4 fill_color = vec4(in_color) * fill;
+    out_color = fill_color + stroke_color;
+  } else {
+    out_color = texture(font_sampler, in_text_uv) * in_color;
+  }
 }
