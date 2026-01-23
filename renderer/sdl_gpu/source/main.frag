@@ -37,26 +37,30 @@ vec4 rect_get_blended_border_color(vec2 p, vec2 half_size) {
   return color;
 }
 
-float rect_get_blended_thickness(vec2 pos, vec2 half_size, vec4 thickness) {
-  float d_left = abs(pos.x + half_size.x);
-  float d_right = abs(pos.x - half_size.x);
-  float d_top = abs(pos.y + half_size.y);
-  float d_bottom = abs(pos.y - half_size.y);
-
-  float wl = 1.0 / (d_left + 1e-2);
-  float wr = 1.0 / (d_right + 1e-2);
-  float wt = 1.0 / (d_top + 1e-2);
-  float wb = 1.0 / (d_bottom + 1e-2);
-
-  return (thickness[3] * wl + thickness[0] * wt + thickness[1] * wr +
-          thickness[2] * wb) /
-         (wl + wt + wr + wb);
-}
-
 float sdf_rect(vec2 pos, vec2 half_size, float radius) {
   vec2 q = abs(pos) - half_size + radius;
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) -
          radius; // NEGATIVE inside, POSITIVE outside
+}
+
+float sdf_inner_rect(vec2 pos, vec2 half_size, vec4 thickness,
+                     float rad_outer) {
+  vec2 inner_half =
+      half_size -
+      vec2(thickness.w + thickness.y, thickness.x + thickness.z) * 0.5;
+
+  vec2 offset =
+      vec2(thickness.w - thickness.y, thickness.x - thickness.z) * 0.5;
+
+  vec2 s = sign(pos);
+  float t_corner = (s.x < 0.0) ? ((s.y < 0.0) ? max(thickness.w, thickness.x)
+                                              : max(thickness.w, thickness.z))
+                               : ((s.y < 0.0) ? max(thickness.y, thickness.x)
+                                              : max(thickness.y, thickness.z));
+
+  float rad_inner = max(0.0, rad_outer - t_corner);
+
+  return sdf_rect(pos - offset, inner_half, rad_inner);
 }
 
 void main() {
@@ -66,19 +70,21 @@ void main() {
 
     float rad = rect_select_side(s_pos, in_radius);
 
-    float thickness_blended =
-        rect_get_blended_thickness(s_pos, h_size, in_border_thickness);
     vec4 border_color_blended = rect_get_blended_border_color(s_pos, h_size);
 
-    float sdf = sdf_rect(s_pos, h_size, rad);
+    float sdf_outer = sdf_rect(s_pos, h_size, rad);
+    float sdf_inner = sdf_inner_rect(s_pos, h_size, in_border_thickness, rad);
 
-    float stroke = smoothstep(
-        -1, 1, thickness_blended / 2 - abs(sdf + thickness_blended / 2));
-    float fill = smoothstep(-1, 1, -sdf - thickness_blended);
+    float aa = 1.0;
+    float outer_mask = smoothstep(aa, -aa, sdf_outer);
+    float inner_mask = smoothstep(-aa, aa, sdf_inner);
 
-    vec4 stroke_color = vec4(border_color_blended) * stroke;
-    vec4 fill_color = vec4(in_color) * fill;
-    out_color = fill_color + stroke_color;
+    float fill = smoothstep(aa, -aa, sdf_inner);
+
+    vec4 fill_color = in_color * fill;
+    vec4 border_color = border_color_blended * outer_mask * inner_mask;
+
+    out_color = fill_color + border_color;
   } else {
     out_color = texture(font_sampler, in_text_uv) * in_color;
   }

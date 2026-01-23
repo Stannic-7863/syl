@@ -1,6 +1,8 @@
 package sdl_renderer
 
+import "base:runtime"
 import "core:c"
+import "core:fmt"
 import "core:mem"
 import "core:os/os2"
 import sdl "vendor:sdl3"
@@ -27,6 +29,7 @@ Command_Batch :: struct {
 default_font: ^ttf.Font = nil
 
 Renderer :: struct {
+	allocator:     runtime.Allocator,
 	gpu:           ^sdl.GPUDevice,
 	window:        ^sdl.Window,
 	pipeline:      ^sdl.GPUGraphicsPipeline,
@@ -47,7 +50,8 @@ Gpu_Dynamic_Buffer :: struct {
 	prev_byte_size: int,
 }
 
-init_renderer :: proc(
+init :: proc(
+	allocator: runtime.Allocator,
 	window_title: cstring,
 	shader_paths: [sdl.GPUShaderStage]string,
 	window_size: [2]c.int = {800, 640},
@@ -103,8 +107,10 @@ init_renderer :: proc(
 
 	r.rect_gpu_buf = init_gpu_dynamic_buffer(&r)
 
-	assert(ttf.Init())
+	ok = ttf.Init(); assert(ok)
+
 	r.font_engine = ttf.CreateGPUTextEngine(r.gpu)
+	assert(r.font_engine != nil)
 
 	r.font_sampler = sdl.CreateGPUSampler(
 		r.gpu,
@@ -117,6 +123,7 @@ init_renderer :: proc(
 			mipmap_mode = .LINEAR,
 		},
 	)
+	assert(r.font_sampler != nil)
 
 	r.dummy_texture = sdl.CreateGPUTexture(
 		r.gpu,
@@ -129,6 +136,13 @@ init_renderer :: proc(
 			num_levels = 1,
 		},
 	)
+	assert(r.dummy_texture != nil)
+
+	r.allocator = allocator
+
+	r.batch = make([dynamic]Command_Batch, r.allocator)
+	r.fonts = make([dynamic]^ttf.Font, r.allocator)
+	r.rects = make([dynamic]Rect, r.allocator)
 
 	return r
 }
@@ -144,8 +158,11 @@ init_gpu_dynamic_buffer :: proc(renderer: ^Renderer) -> Gpu_Dynamic_Buffer {
 	data_buffer := sdl.CreateGPUBuffer(renderer.gpu, {size = 64, usage = {.GRAPHICS_STORAGE_READ}})
 	transfer_buffer := sdl.CreateGPUTransferBuffer(renderer.gpu, {size = 64, usage = .UPLOAD})
 
+	assert(data_buffer != nil)
+	assert(transfer_buffer != nil)
+
 	dyn_buf: Gpu_Dynamic_Buffer
-	dyn_buf.byte_size = 64
+	dyn_buf.byte_size = 64 // can't initialize a buffer with zero size, so reserve 64 bytes in advance
 	dyn_buf.prev_byte_size = 64
 	dyn_buf.data = data_buffer
 	dyn_buf.tansfer = transfer_buffer
@@ -153,8 +170,29 @@ init_gpu_dynamic_buffer :: proc(renderer: ^Renderer) -> Gpu_Dynamic_Buffer {
 	return dyn_buf
 }
 
-destroy_renderer :: proc() {
+destroy :: proc(renderer: ^Renderer) {
 
+	destroy_gpu_dynamic_buffer(renderer, &renderer.rect_gpu_buf)
+
+	sdl.ReleaseGPUGraphicsPipeline(renderer.gpu, renderer.pipeline)
+
+	sdl.ReleaseGPUTexture(renderer.gpu, renderer.dummy_texture)
+	sdl.ReleaseGPUSampler(renderer.gpu, renderer.font_sampler)
+
+	for f in renderer.fonts {
+		ttf.CloseFont(f)
+	}
+
+	ttf.DestroyGPUTextEngine(renderer.font_engine)
+
+	sdl.ReleaseWindowFromGPUDevice(renderer.gpu, renderer.window)
+
+	sdl.DestroyWindow(renderer.window)
+	sdl.DestroyGPUDevice(renderer.gpu)
+
+	delete(renderer.batch)
+	delete(renderer.rects)
+	delete(renderer.fonts)
 }
 
 destroy_gpu_dynamic_buffer :: proc(renderer: ^Renderer, buffer: ^Gpu_Dynamic_Buffer) {
@@ -224,13 +262,13 @@ feed_renderer :: proc(
 		r.position_and_size.zw = box.size
 		r.border_thickness = box.border_thickness
 		r.radius = box.border_radius
-		r.color = color_syl_sdl(box.background_color)
+		r.color = color_syl_to_sdl(box.background_color)
 		r.flags = 0
 		r.border_color = {
-			color_syl_sdl(box.border_color.x),
-			color_syl_sdl(box.border_color.y),
-			color_syl_sdl(box.border_color.z),
-			color_syl_sdl(box.border_color.w),
+			color_syl_to_sdl(box.border_color.x),
+			color_syl_to_sdl(box.border_color.y),
+			color_syl_to_sdl(box.border_color.z),
+			color_syl_to_sdl(box.border_color.w),
 		}
 		append(&renderer.rects, r)
 
@@ -286,7 +324,7 @@ feed_renderer :: proc(
 					r.position_and_size.zw = {width, height}
 					r.uv_x = {uv0.x, uv1.x, uv2.x, uv3.x}
 					r.uv_y = {uv2.y, uv3.y, uv0.y, uv1.y}
-					r.color = color_syl_sdl(text.color)
+					r.color = color_syl_to_sdl(text.color)
 					r.flags = {1, 0, 0, 0}
 
 					index := len(renderer.rects)
@@ -320,7 +358,7 @@ feed_renderer :: proc(
 	return start, bound_texture
 }
 
-feed_validate :: proc(renderer: ^Renderer, start: int, bound_texture : ^sdl.GPUTexture) {
+feed_validate :: proc(renderer: ^Renderer, start: int, bound_texture: ^sdl.GPUTexture) {
 	if len(renderer.batch) == 0 ||
 	   renderer.batch[len(renderer.batch) - 1].end < len(renderer.rects) {
 		append(
@@ -379,7 +417,7 @@ render :: proc(renderer: ^Renderer) {
 		},
 		1,
 	)
-	
+
 	for b in renderer.batch {
 		if b.font_texture != nil {
 			sdl.BindGPUFragmentSamplers(
@@ -392,7 +430,7 @@ render :: proc(renderer: ^Renderer) {
 				1,
 			)
 		}
-		sdl.DrawGPUPrimitives(render_pass, 6, u32(b.end - b.start), 0, u32(b.start) )
+		sdl.DrawGPUPrimitives(render_pass, 6, u32(b.end - b.start), 0, u32(b.start))
 	}
 
 	sdl.EndGPURenderPass(render_pass)
@@ -441,6 +479,6 @@ measure_text :: proc(s: string, font: rawptr, size: int, spacing: f32) -> int {
 	return int(w)
 }
 
-color_syl_sdl :: proc(c: [4]u8) -> [4]f32 {
+color_syl_to_sdl :: proc(c: [4]u8) -> [4]f32 {
 	return {f32(c.r), f32(c.g), f32(c.b), f32(c.a)} / 255.0
 }

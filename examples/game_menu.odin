@@ -1,9 +1,7 @@
 package main
 
 import syl "../"
-import renderer "../renderer/raylib"
 import "core:math/ease"
-import rl "vendor:raylib"
 
 SCREEN_W :: 800
 SCREEN_H :: 500
@@ -15,6 +13,14 @@ PRIMARY_COLOR :: [4]u8{236,155,92, 255} // orange
 SECONDARY_COLOR :: [4]u8{160,223,227, 255}
 PRIMARY_TEXT_COLOR :: [4]u8{25,16,0, 255} // black
 MUTED :: [4]u8{46,79,90, 255}
+
+GREEN :: [4]u8{175,194,30, 255}
+BLUE :: [4]u8{0, 0, 255, 255}
+YELLOW :: [4]u8{255,255,40, 255}
+BLANK :: [4]u8{0, 0, 0, 0}
+RED :: [4]u8{255, 0, 0, 255}
+DARK :: [4]u8{31,31,33, 255}
+CELESTE :: [4]u8{80,99,132, 255}
 
 style_sheet := syl.Style_Sheet {
 	box = {
@@ -181,26 +187,6 @@ exit :: proc() -> ^syl.Box {
 			)
 		)
 	}),
-}
-
-main :: proc() {
-	//rl.SetConfigFlags({.VSYNC_HINT})
-	rl.InitWindow(SCREEN_W, SCREEN_H, "Game Settings")
-	ui := game_menu_ui()
-
-	renderer.init()
-	defer renderer.deinit()
-
-	for !rl.WindowShouldClose() {
-		renderer.update(ui)
-
-		rl.BeginDrawing()
-			rl.ClearBackground(cast(rl.Color)BACKGROUND_COLOR)
-			renderer.render(ui)
-		rl.EndDrawing()
-	}
-
-	rl.CloseWindow()
 }
 
 game_ui_destroy :: proc(game_ui: ^Game_UI) {
