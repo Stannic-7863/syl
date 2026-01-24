@@ -5,9 +5,8 @@ layout(location = 1) in vec4 in_radius;
 layout(location = 2) in vec4 in_border_thickness;
 layout(location = 3) in vec2 in_size;
 layout(location = 4) in vec2 in_uv;
-layout(location = 5) in vec2 in_text_uv;
-layout(location = 6) in vec4 in_border_color[4];
-layout(location = 11) flat in ivec4 in_flags;
+layout(location = 5) in vec4 in_border_color[4];
+layout(location = 9) flat in ivec4 in_flags;
 
 layout(location = 0) out vec4 out_color;
 
@@ -86,6 +85,6 @@ void main() {
 
     out_color = fill_color + border_color;
   } else {
-    out_color = texture(font_sampler, in_text_uv) * in_color;
+    out_color = texture(font_sampler, in_uv) * in_color;
   }
 }

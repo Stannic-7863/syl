@@ -11,12 +11,10 @@ import ttf "vendor:sdl3/ttf"
 import syl "../.."
 
 Rect :: struct #packed {
-	radius:            [4]f32,
 	position_and_size: [4]f32,
 	color:             [4]f32,
-	uv_x:              [4]f32,
-	uv_y:              [4]f32,
-	border_thickness:  [4]f32,
+	f1:                [4]f32, // uv_x for text, border radius for rects
+	f2:                [4]f32, // uv_y for text, border thickness for rects
 	border_color:      [4][4]f32,
 	flags:             [4]i32,
 }
@@ -260,8 +258,8 @@ feed_renderer :: proc(
 		r := Rect{}
 		r.position_and_size.xy = box.global_position
 		r.position_and_size.zw = box.size
-		r.border_thickness = box.border_thickness
-		r.radius = box.border_radius
+		r.f1 = box.border_radius
+		r.f2 = box.border_thickness
 		r.color = color_syl_to_sdl(box.background_color)
 		r.flags = 0
 		r.border_color = {
@@ -322,8 +320,8 @@ feed_renderer :: proc(
 					r := Rect{}
 					r.position_and_size.xy = line.global_position + {x_min, 0}
 					r.position_and_size.zw = {width, height}
-					r.uv_x = {uv0.x, uv1.x, uv2.x, uv3.x}
-					r.uv_y = {uv2.y, uv3.y, uv0.y, uv1.y}
+					r.f1 = {uv0.x, uv1.x, uv2.x, uv3.x}
+					r.f2 = {uv2.y, uv3.y, uv0.y, uv1.y}
 					r.color = color_syl_to_sdl(text.color)
 					r.flags = {1, 0, 0, 0}
 

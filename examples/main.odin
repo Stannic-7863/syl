@@ -73,7 +73,6 @@ run_sdl_backend :: proc() {
 	ui := game_menu_ui()
 	
 	defer syl.destroy_context()
-	defer syl.box_destroy(ui)
 
 	run: for {
 

@@ -1,16 +1,11 @@
 #version 460
 
 struct Rect {
-  vec4 radius;
   vec4 position_and_size;
   vec4 color;
-  vec4 uv_x;
-  vec4 uv_y;
-  vec4 thickness;
-  vec4 border_color_top;
-  vec4 border_color_right;
-  vec4 border_color_bottom;
-  vec4 border_color_left;
+  vec4 f1;
+  vec4 f2;
+  vec4 border_color[4];
   ivec4 flags;
 };
 
@@ -22,9 +17,8 @@ layout(location = 1) out vec4 out_radius;
 layout(location = 2) out vec4 out_thickness;
 layout(location = 3) out vec2 out_size;
 layout(location = 4) out vec2 out_uv;
-layout(location = 5) out vec2 out_text_uv;
-layout(location = 6) out vec4 out_border_color[4];
-layout(location = 11) out ivec4 out_flags;
+layout(location = 5) out vec4 out_border_color[4];
+layout(location = 9) out ivec4 out_flags;
 
 const vec2 positions[6] =
     vec2[](vec2(0.5, 0.5), vec2(-0.5, 0.5), vec2(-0.5, -0.5), vec2(0.5, 0.5),
@@ -43,14 +37,17 @@ void main() {
   vec2 pos = rect.position_and_size.xy;
 
   out_color = rect.color;
-  out_radius = rect.radius;
-  out_thickness = rect.thickness;
+  out_radius = rect.f1;
+  out_thickness = rect.f2;
   out_size = size;
-  out_uv = uvs[gl_VertexIndex];
-  out_text_uv = vec2(rect.uv_x[uv_map[gl_VertexIndex]], rect.uv_y[uv_map[gl_VertexIndex]]);
-  out_border_color = vec4[](rect.border_color_top, rect.border_color_right,
-                            rect.border_color_bottom, rect.border_color_left);
+  out_border_color = rect.border_color; 
   out_flags = rect.flags;
+
+  if (rect.flags.x == 1) {
+	  out_uv = vec2(rect.f1[uv_map[gl_VertexIndex]], rect.f2[uv_map[gl_VertexIndex]]);
+  } else {
+	  out_uv = uvs[gl_VertexIndex];
+  }
 
   gl_Position = proj * vec4(vert_pos * size + pos + size / 2, 1.0, 1.0);
 }
